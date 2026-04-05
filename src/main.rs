@@ -63,18 +63,18 @@ fn setup(
 
     // 箱を複数配置
     let positions = [
-        (0.0, -2.0, 2.0),   // (x, z, 高さ)
-        (3.0, -4.0, 1.0),
-        (-3.0, -6.0, 4.0),
-        (5.0, -8.0, 1.5),
-        (-5.0, -5.0, 3.0),
+        (0.0, -2.0, 2.0, Color::srgb(0.8, 0.6, 0.4)),// (x, z, 高さ) ベージュ
+        (3.0, -4.0, 1.0, Color::srgb(0.6, 0.6, 0.8)), // 青っぽい
+        (-3.0, -6.0, 4.0, Color::srgb(0.8, 0.4, 0.4)), // 赤っぽい
+        (5.0, -8.0, 1.5, Color::srgb(0.8, 0.9, 0.6)), // yellow
+        (-5.0, -5.0, 3.0, Color::srgb( 0.5, 0.7, 0.5)), // green
 
     ];
 
-    for (x, z, height) in positions {
+    for (x, z, height, color) in positions {
         commands.spawn((
             Mesh3d(meshes.add(Cuboid::new(1.0, height, 1.0))),
-            MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
+            MeshMaterial3d(materials.add(color)),
             Transform::from_xyz(x, height / 2.0,  z),
         ));
     }
@@ -96,14 +96,14 @@ fn asset_loaded(
     let image = images.get_mut(&skybox_res.image).unwrap();
     if image.texture_descriptor.array_layer_count() == 1 {
         let layers = image.height() / image.width();
-        image.reinterpret_stacked_2d_as_array(layers);
+        let _= image.reinterpret_stacked_2d_as_array(layers);
         image.texture_view_descriptor = Some(TextureViewDescriptor {
             dimension: Some(TextureViewDimension::Cube),
             ..default()
         });
     }
 
-    if let Ok(entity) = camera_query.get_single(){
+    if let Ok(entity) = camera_query.single(){
         commands.entity(entity).insert(Skybox {
             image: skybox_res.image.clone(),
             brightness: 1000.0,
