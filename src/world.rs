@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::core_pipeline::Skybox;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
-use bevy_flycam::prelude::*;
 use avian3d::prelude::*;
 
 #[derive(Resource)]
@@ -23,11 +22,10 @@ pub fn setup(
         is_loaded: false,
     });
 
-    // カメラ (FlyCamコンポーネントを付けることでWASD操作可能に)
+    // カメラ
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-        FlyCam,
     ));
 
     // 太陽光
