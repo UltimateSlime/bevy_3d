@@ -46,7 +46,7 @@ pub fn setup(
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RigidBody::Static,
-        Collider::cuboid(50.0, 0.1, 50.0),
+        Collider::cuboid(50.0, 0.0, 50.0),
     ));
 
     // 箱
@@ -54,6 +54,9 @@ pub fn setup(
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
         Transform::from_xyz(0.0, 0.5, 0.0),
+        RigidBody::Static,
+        Collider::cuboid(1.0, 1.0, 1.0), 
+
     ));
 
     // 箱を複数配置
@@ -71,6 +74,8 @@ pub fn setup(
             Mesh3d(meshes.add(Cuboid::new(1.0, height, 1.0))),
             MeshMaterial3d(materials.add(color)),
             Transform::from_xyz(x, height / 2.0,  z),
+            RigidBody::Static,
+            Collider::cuboid(1.0, height, 1.0), 
         ));
     }
 
@@ -80,7 +85,7 @@ pub fn setup(
         MeshMaterial3d(materials.add(Color::srgb(0.8,0.3, 0.3))),
         Transform::from_xyz(2.0, 20.0, -3.0),  // 高い位置からスタート
         RigidBody::Dynamic,  // 動的な剛体として設定
-        Collider::cuboid(0.9, 0.9, 0.9), // コライダーを追加
+        Collider::cuboid(1.0, 1.0, 1.0), // コライダーを追加
     ));
 }
 
