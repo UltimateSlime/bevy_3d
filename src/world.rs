@@ -5,7 +5,7 @@ use bevy_flycam::prelude::*;
 use avian3d::prelude::*;
 
 #[derive(Resource)]
-pub struct Skyboxhandle {
+pub struct SkyboxHandle {
     pub image: Handle<Image>,
     pub is_loaded: bool,
 }
@@ -22,6 +22,13 @@ pub fn setup(
         image: skybox_handle.clone(),
         is_loaded: false,
     });
+
+    // カメラ (FlyCamコンポーネントを付けることでWASD操作可能に)
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+        FlyCam,
+    ));
 
     // 太陽光
     commands.spawn((
@@ -40,6 +47,13 @@ pub fn setup(
         Transform::from_xyz(0.0, 0.0, 0.0),
         RigidBody::Static,
         Collider::cuboid(50.0, 0.1, 50.0),
+    ));
+
+    // 箱
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
+        Transform::from_xyz(0.0, 0.5, 0.0),
     ));
 
     // 箱を複数配置
@@ -78,9 +92,9 @@ pub fn asset_loaded(
     mut skybox_res: ResMut<SkyboxHandle>,
     camera_query: Query<Entity, With<Camera3d>>,
 ) {
-    if skybox_res.is_loaded { return; }  // すでにロードされている場合は何もしない
-    if !asset_server.load_sate(&skybox_res.image).is_loaded() { return; }  // まだロードされていない場合は何もしない
-    
+    if skybox_res.is_loaded { return; } 
+    if !asset_server.load_state(&skybox_res.image).is_loaded() { return; }  // まだロードされていない場合は何もしない
+
     let image = images.get_mut(&skybox_res.image).unwrap();
     if image.texture_descriptor.array_layer_count() == 1 {
         let layers = image.height() / image.width();
