@@ -12,5 +12,6 @@ fn main() {
         .add_plugins(PhysicsPlugins::default())
         .add_systems(Startup, (world::setup, player::spawn_player))
         .add_systems(Update, (world::asset_loaded, player::move_player))
+        .add_systems(Update, player::camera_follow)
         .run();
 }
