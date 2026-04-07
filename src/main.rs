@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_flycam::prelude::*;
 use avian3d::prelude::*;
 
 mod world;

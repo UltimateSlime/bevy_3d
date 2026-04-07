@@ -7,7 +7,6 @@ A 3D game in development using Rust + Bevy 0.18. A learning project aimed at bui
 - Rust 1.94.1
 - Bevy 0.18
 - avian3d 0.5
-- bevy_flycam 0.18
 - OS: Windows 11 / GTX 1080 Ti
 
 ## Controls
