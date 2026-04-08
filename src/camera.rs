@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::input::mouse::AccumulatedMouseMotion;
+use bevy::window::{CursorGrabMode, CursorOptions};
 use avian3d::prelude::*;
 use crate::player::Player;
 
@@ -45,6 +46,13 @@ pub fn spawn_camera(
     ));
 }
 
+pub fn cursor_lock(
+    mut cursor_option: Single<&mut CursorOptions>,
+) {
+    
+    cursor_option.grab_mode = CursorGrabMode::Locked;
+    cursor_option.visible =false;
+}
 
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
