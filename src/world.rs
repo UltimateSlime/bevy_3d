@@ -22,11 +22,7 @@ pub fn setup(
         is_loaded: false,
     });
 
-    // カメラ
-    commands.spawn((
-        Camera3d::default(),
-        Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
-    ));
+
 
     // 太陽光
     commands.spawn((
