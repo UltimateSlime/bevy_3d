@@ -128,3 +128,16 @@ pub fn camera_follow(
     }
 }
 
+pub fn handle_focus(
+    window: Single<&Window>,
+    mut cursor_options: Single<&mut CursorOptions>,
+) {
+    if window.focused {
+        cursor_options.grab_mode = CursorGrabMode::Locked;
+        cursor_options.visible = false;
+    } else {
+        cursor_options.grab_mode = CursorGrabMode::None;
+        cursor_options.visible = true;
+    }
+}
+
