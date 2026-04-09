@@ -19,6 +19,7 @@ fn close_on_esc(
     }
 }
 
+
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -35,6 +36,7 @@ fn main() {
             player::move_player,
             camera::camera_follow,
         ).chain())
+        .add_systems(Update, camera::handle_focus)
         .add_systems(Update, close_on_esc)
         .run();
 }
