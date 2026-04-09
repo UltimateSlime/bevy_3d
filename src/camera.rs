@@ -51,14 +51,6 @@ pub fn spawn_camera(
     ));
 }
 
-pub fn cursor_lock(
-    mut cursor_option: Single<&mut CursorOptions>,
-) {
-    
-    cursor_option.grab_mode = CursorGrabMode::Locked;
-    cursor_option.visible =false;
-}
-
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_motion: Res<AccumulatedMouseMotion>,
@@ -130,12 +122,13 @@ pub fn camera_follow(
 
 pub fn handle_focus(
     window: Single<&Window>,
+    mouse_button: Res<ButtonInput<MouseButton>>,
     mut cursor_options: Single<&mut CursorOptions>,
 ) {
-    if window.focused {
+    if window.focused && mouse_button.just_pressed(MouseButton::Left) {
         cursor_options.grab_mode = CursorGrabMode::Locked;
         cursor_options.visible = false;
-    } else {
+    } else if !window.focused {
         cursor_options.grab_mode = CursorGrabMode::None;
         cursor_options.visible = true;
     }

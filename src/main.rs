@@ -28,7 +28,6 @@ fn main() {
             world::setup,
             player::spawn_player,
             camera::spawn_camera,
-            camera::cursor_lock,
         ))    
         .add_systems(Update, (
             world::asset_loaded,
