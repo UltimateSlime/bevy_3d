@@ -48,11 +48,12 @@ pub fn move_player(
     velocity.z = direction.normalize_or_zero().z * speed;
 
     // 足元に地面があるか確認
-    let grounded = spatial_query.cast_ray(
+    let grounded = spatial_query.cast_shape(
+        &Collider::cylinder(0.35, 0.0),
         transform.translation,              // レイの開始点 (プレイヤーの位置)
+        Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
-        1.1,                    // 距離 (1.1 = カプセルの半径+少し余裕)
-        true,                           // 固体のみ
+        &ShapeCastConfig::from_max_distance(1.1),
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
     

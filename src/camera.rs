@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::input::mouse::AccumulatedMouseMotion;
+use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
 use bevy::window::{CursorGrabMode, CursorOptions};
 use avian3d::prelude::*;
 use crate::player::Player;
@@ -14,11 +14,12 @@ pub enum CameraMode {
 pub struct CameraAngle {
     yaw: f32,
     pitch: f32,
+    distance: f32,
 }
 
 impl Default for CameraAngle{
     fn default() -> Self {
-        Self { yaw: 0.0, pitch: 0.3 }
+        Self { yaw: 0.0, pitch: 0.3, distance: 10.0 }
     }
 }
 
@@ -29,8 +30,12 @@ impl CameraAngle {
     pub fn add_pitch(&mut self, delta: f32) {
         self.pitch = (self.pitch - delta).clamp(-0.5, 1.4);
     }
+    pub fn add_distance(&mut self, delta:f32) {
+        self.distance = (self.distance - delta).clamp(2.0, 100.0);
+    }
     pub fn yaw(&self) -> f32 { self.yaw }
     pub fn pitch(&self) -> f32 { self.pitch }
+    pub fn distance(&self) -> f32 { self.distance}
 }
 
     // カメラ
@@ -57,6 +62,7 @@ pub fn cursor_lock(
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_motion: Res<AccumulatedMouseMotion>,
+    mouse_scroll: Res<AccumulatedMouseScroll>,
     mut camera_query: Query<(&mut CameraMode, &mut CameraAngle), With<Camera3d>>,
 ) {
     let Ok((mut mode, mut angle)) = camera_query.single_mut() else {return; };
@@ -72,6 +78,8 @@ pub fn update_camera(
     let sensitivity = 0.003;
     angle.add_yaw(mouse_motion.delta.x * sensitivity);
     angle.add_pitch(mouse_motion.delta.y * sensitivity);
+
+    angle.add_distance(mouse_scroll.delta.y);
 }
 
 pub fn camera_follow(
@@ -88,7 +96,7 @@ pub fn camera_follow(
 
     match *mode {
         CameraMode::TPS => {
-            let ideal_offset = rotation * Vec3::new(0.0, 5.0, 10.0);
+            let ideal_offset = rotation * Vec3::new(0.0, 5.0, angle.distance());
             let ideal_pos = player_transform.translation + ideal_offset;
 
             // プレイヤー位置から理想位置へレイを飛ばす
