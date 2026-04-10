@@ -91,7 +91,7 @@ pub fn move_player(
         transform.translation,              // レイの開始点 (プレイヤーの位置)
         Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
-        &ShapeCastConfig::from_max_distance(1.2),
+        &ShapeCastConfig::from_max_distance(1.5),
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
     
