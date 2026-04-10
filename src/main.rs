@@ -37,6 +37,7 @@ fn main() {
         ).chain())
         .add_systems(Update, camera::handle_focus)
         .add_systems(Update, close_on_esc)
+        .add_systems(Update, player::setup_player_animation)
         .run();
 }
 
