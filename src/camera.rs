@@ -51,6 +51,7 @@ pub fn spawn_camera(
     ));
 }
 
+
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_motion: Res<AccumulatedMouseMotion>,
