@@ -1,3 +1,9 @@
+# Bevy 3D character controller with animation (Rust)
+
+3D open-world game in Rust + Bevy 0.18 (WIP)
+
+![demo](docs/images/demo.gif)
+
 ## Controls
 
 | Key | Action |
@@ -23,18 +29,33 @@
 - Capsule collider with 3D character model (GLB from Mixamo)
 - `RigidBody::Dynamic` + `LockedAxes::ROTATION_LOCKED`
 - Ground detection via shape cast for jump control
-- Animations: Idle / Walk / Jump (WIP)
+- Player rotates towards movement direction
+- `PlayerState` component for state management (Idle / Walking / Jumping)
+- Animations: Idle / Walk / Jump
+
+## Known Issues
+- Animation desync when hitting walls
+- Jump animation needs improvement
 
 ## File Structure
+
+```
 src/
 ├── main.rs      # App initialization and plugin registration
 ├── world.rs     # Ground, buildings, lights, skybox
-├── player.rs    # Player, movement, jump, animations
+├── player.rs    # Player, movement, jump, animations, PlayerState
 └── camera.rs    # Camera modes, rotation, collision, cursor lock
 assets/
 ├── textures/
 │   └── Ryfjallet_cubemap.png
 └── models/
-    ├── idle.glb
-    ├── walking.glb
-    └── jump.glb
+    └── player.glb  # Merged idle/walk/jump animations (Mixamo)
+docs/
+└── images/
+    └── demo.gif
+```
+
+## Dependencies
+- [Bevy 0.18](https://bevyengine.org/)
+- [avian3d 0.5](https://github.com/Jondolf/avian)
+```
