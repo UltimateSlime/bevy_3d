@@ -67,11 +67,11 @@ pub fn setup_player_animation(
 
 pub fn move_player(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(Entity, &mut LinearVelocity, &Transform, &mut PlayerState), With<Player>>,
+    mut query: Query<(Entity, &mut LinearVelocity, &mut Transform, &mut PlayerState), With<Player>>,
     spatial_query: SpatialQuery,
     camera_query: Query<&CameraAngle, With<Camera3d>>,
 ) {
-    let Ok((entity, mut velocity, transform, mut state)) = query.single_mut() else { return; };
+    let Ok((entity, mut velocity,mut transform, mut state)) = query.single_mut() else { return; };
     let Ok(angle) = camera_query.single() else { return; };
 
 
@@ -89,6 +89,12 @@ pub fn move_player(
 
     velocity.x = direction.x * speed;
     velocity.z = direction.z * speed;
+
+    // 移動方向にプレイヤーを向かせる
+    if direction.length_squared() > 0.01 {
+        let target_rotation = Quat::from_rotation_y(direction.x.atan2(direction.z));
+        transform.rotation = transform.rotation.slerp(target_rotation, 0.2);
+    }
 
     // 足元に地面があるか確認
     let grounded = spatial_query.cast_shape(
