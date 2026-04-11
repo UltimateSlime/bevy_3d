@@ -32,13 +32,13 @@ fn main() {
         .add_systems(Update, (
             world::asset_loaded,
             camera::update_camera,
+            player::setup_player_animation,
             player::move_player,
             player::update_animation,
             camera::camera_follow,
         ).chain())
         .add_systems(Update, camera::handle_focus)
         .add_systems(Update, close_on_esc)
-        .add_systems(Update, player::setup_player_animation)
         .run();
 }
 
