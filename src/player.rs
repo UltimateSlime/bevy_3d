@@ -49,12 +49,10 @@ pub fn spawn_player(
 pub fn setup_player_animation(
     mut commands: Commands,
     animations: Res<PlayerAnimations>,
-    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>
+    mut players: Query<Entity, Added<AnimationPlayer>>
 ) {
-    for (entity, mut player) in &mut players {
-        commands.entity(entity).insert(AnimationGraphHandle(animations.graph.clone()));
-        player.play(animations.idle).repeat();
-        };
+    for entity in &mut players {
+        commands.entity(entity).insert(AnimationGraphHandle(animations.graph.clone()));};
 }
 
 
@@ -105,7 +103,7 @@ pub fn update_animation(
     player_query: Query<(&LinearVelocity, &Transform, Entity), With<Player>>,
     spatial_query: SpatialQuery,
     mut anim_players: Query<&mut AnimationPlayer>,
-    mut current_anim: Local<AnimationNodeIndex>,
+    mut current_anim: Local<Option<AnimationNodeIndex>>,
 ) {
     let Ok((velocity, transform, entity)) = player_query.single() else { return; };
 
@@ -129,8 +127,8 @@ pub fn update_animation(
         animations.idle
     };
 
-    if next_anim != *current_anim {
-        *current_anim = next_anim;
+    if *current_anim != Some(next_anim) {
+        *current_anim = Some(next_anim);
         for mut player in &mut anim_players {
             player.stop_all();
 
