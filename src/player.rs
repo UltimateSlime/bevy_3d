@@ -20,9 +20,9 @@ pub fn spawn_player(
 ) {
     let mut graph = AnimationGraph::new();
 
-    let idle = graph.add_clip(asset_server.load("models/idle.glb#Animation0"),1.0, graph.root);
-    let walk = graph.add_clip(asset_server.load("models/walk.glb#Animation0"),1.0, graph.root);
-    let jump= graph.add_clip(asset_server.load("models/jump.glb#Animation0"),1.0, graph.root);
+    let idle = graph.add_clip(asset_server.load("models/player.glb#Animation0"),1.0, graph.root);
+    let walk = graph.add_clip(asset_server.load("models/player.glb#Animation2"),1.0, graph.root);
+    let jump= graph.add_clip(asset_server.load("models/player.glb#Animation1"),1.0, graph.root);
 
     let graph_handle = graphs.add(graph);
 
@@ -41,7 +41,7 @@ pub fn spawn_player(
         LockedAxes::ROTATION_LOCKED,
         Player,
     )).with_child((
-        SceneRoot(asset_server.load("models/idle.glb#Scene0")),
+        SceneRoot(asset_server.load("models/player.glb#Scene0")),
         Transform::from_xyz(0.0, -0.85, 0.0),
     ));
 }
@@ -63,8 +63,6 @@ pub fn move_player(
     mut query: Query<(Entity, &mut LinearVelocity, &Transform), With<Player>>,
     spatial_query: SpatialQuery,
     camera_query: Query<&CameraAngle, With<Camera3d>>,
-    animations: Res<PlayerAnimations>,
-    mut anim_players: Query<&mut AnimationPlayer, Without<Player>>,
 ) {
     let Ok((entity, mut velocity, transform)) = query.single_mut() else { return; };
     let Ok(angle) = camera_query.single() else { return; };
@@ -100,20 +98,48 @@ pub fn move_player(
         velocity.y = 8.0; // ジャンプの高さを調整
     }
 
-    let is_moving = direction.length_squared() > 0.1;
-    let is_jumping = !grounded;
-
-
-    for mut player in &mut anim_players {
-        if is_jumping {
-            player.play(animations.jump).repeat();
-        } else if is_moving {
-            player.play(animations.walk).repeat();
-        } else {
-            player.play(animations.idle).repeat();
-        }
-    }
 }
 
+pub fn update_animation(
+    animations: Res<PlayerAnimations>,
+    player_query: Query<(&LinearVelocity, &Transform, Entity), With<Player>>,
+    spatial_query: SpatialQuery,
+    mut anim_players: Query<&mut AnimationPlayer>,
+    mut current_anim: Local<AnimationNodeIndex>,
+) {
+    let Ok((velocity, transform, entity)) = player_query.single() else { return; };
 
+    let grounded = spatial_query.cast_shape(
+        &Collider::cylinder(0.35, 0.0),
+        transform.translation,
+        Quat::IDENTITY,
+        Dir3::NEG_Y,
+        &ShapeCastConfig::from_max_distance(1.5),
+        &SpatialQueryFilter::from_excluded_entities(vec![entity]),
+    ).is_some();
 
+    let is_moving = (velocity.x.abs() > 0.1) || (velocity.z.abs() > 0.1);
+    let is_jumping = !grounded;  
+
+    let next_anim = if is_jumping {
+        animations.jump
+    } else if is_moving {
+        animations.walk
+    } else {
+        animations.idle
+    };
+
+    if next_anim != *current_anim {
+        *current_anim = next_anim;
+        for mut player in &mut anim_players {
+            player.stop_all();
+
+            if next_anim == animations.jump {
+                player.play(next_anim);
+            } else {
+                player.play(next_anim).repeat();
+            }
+        }
+    }
+    
+}

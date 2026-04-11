@@ -33,6 +33,7 @@ fn main() {
             world::asset_loaded,
             camera::update_camera,
             player::move_player,
+            player::update_animation,
             camera::camera_follow,
         ).chain())
         .add_systems(Update, camera::handle_focus)
