@@ -58,10 +58,13 @@ pub fn spawn_player(
 pub fn setup_player_animation(
     mut commands: Commands,
     animations: Res<PlayerAnimations>,
-    mut players: Query<Entity, Added<AnimationPlayer>>
+    mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
 ) {
-    for entity in &mut players {
-        commands.entity(entity).insert(AnimationGraphHandle(animations.graph.clone()));};
+    for (entity, mut player) in &mut players {
+        commands.entity(entity).insert(AnimationGraphHandle(animations.graph.clone()));
+        player.play(animations.idle).repeat();
+    };
+ 
 }
 
 
@@ -102,7 +105,7 @@ pub fn move_player(
         transform.translation,              // レイの開始点 (プレイヤーの位置)
         Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
-        &ShapeCastConfig::from_max_distance(1.5),
+        &ShapeCastConfig::from_max_distance(1.1),
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
     
