@@ -101,11 +101,15 @@ pub fn move_player(
         PLAYER_SPEED
     };
 
-    if keyboard.pressed(KeyCode::ControlLeft) {
-        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT));
-    } else {
-        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
-    }
+    let can_stand = spatial_query.cast_shape(
+        &Collider::cylinder(PLAYER_RADIUS, 0.0),
+        transform.translation,
+        Quat::IDENTITY,
+        Dir3::Y,               // 上方向
+        &ShapeCastConfig::from_max_distance(PLAYER_HEIGHT + 0.2),  // 少し余裕を持たせる
+        &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
+     ).is_none();   
+
 
     let mut direction = Vec3::ZERO;
 
@@ -150,15 +154,22 @@ pub fn move_player(
     // PlayerStateを更新
     *state = if !grounded {
         PlayerState::Jumping
-    } else if crouching && (has_input && is_moving) {
-        PlayerState::CrouchWalking
     } else if crouching {
-        PlayerState::CrouchIdle
-    } else if has_input && is_moving {
-        PlayerState::Walking
+        if has_input && is_moving { PlayerState::CrouchWalking } else {PlayerState::CrouchIdle} 
+    } else if matches!(*state, PlayerState::CrouchWalking | PlayerState::CrouchIdle) && !can_stand {
+        if has_input && is_moving { PlayerState::CrouchWalking } else { PlayerState::CrouchIdle}
     } else {
-        PlayerState::Idle
+        if has_input && is_moving { PlayerState::Walking } else { PlayerState::Idle}   
     };
+
+    match *state {
+        PlayerState::CrouchIdle | PlayerState::CrouchWalking => {
+            commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT));
+                }
+            _ => {
+                    commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
+            }
+    }
 
     if keyboard.just_pressed(KeyCode::Space) && grounded {
         velocity.y = JUMP_VELOCITY; 

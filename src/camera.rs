@@ -21,7 +21,7 @@ pub struct CameraAngle {
 
 impl Default for CameraAngle{
     fn default() -> Self {
-        Self { yaw: 0.0, pitch: 0.5, distance: 5.0 }
+        Self { yaw: 0.0, pitch: 0.5, distance: -5.0 }
     }
 }
 
