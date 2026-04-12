@@ -40,7 +40,7 @@ pub fn setup(
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RigidBody::Static,
-        Collider::cuboid(50.0, 0.0, 50.0),
+        Collider::cuboid(100.0, 0.0, 100.0),
     ));
 
     // 箱
@@ -80,6 +80,15 @@ pub fn setup(
         Transform::from_xyz(2.0, 20.0, -3.0),  // 高い位置からスタート
         RigidBody::Dynamic,  // 動的な剛体として設定
         Collider::cuboid(1.0, 1.0, 1.0), // コライダーを追加
+    ));
+
+    // 低い天井 (しゃがみテスト用)
+    commands.spawn((
+        Mesh3d(meshes.add(Cuboid::new(10.0, 0.5, 10.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.5, 0.5, 0.8))),
+        Transform:: from_xyz(20.0, 1.8, 0.0),
+        RigidBody::Static,
+        Collider::cuboid(10.0, 0.5, 10.0),
     ));
 }
 

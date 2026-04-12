@@ -69,6 +69,7 @@ pub fn setup_player_animation(
 
 
 pub fn move_player(
+    mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
     mut query: Query<(Entity, &mut LinearVelocity, &mut Transform, &mut PlayerState), With<Player>>,
     spatial_query: SpatialQuery,
@@ -85,6 +86,12 @@ pub fn move_player(
     } else {
         5.0
     };
+
+    if keyboard.pressed(KeyCode::ControlLeft) {
+        commands.entity(entity).insert(Collider::capsule(0.3, 0.2));
+    } else {
+        commands.entity(entity).insert(Collider::capsule(0.3, 1.1));
+    }
 
     let mut direction = Vec3::ZERO;
 
