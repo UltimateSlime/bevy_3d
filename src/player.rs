@@ -154,11 +154,11 @@ pub fn update_animation(
             player.stop_all();
 
             if *state == PlayerState::Jumping {
-                player.play(next_anim);
+                player.play(next_anim).seek_to(19.0 / 30.0);
             } else {
                 player.play(next_anim).repeat();
             }
-        }
-    }
     
+       };
+    }
 }
