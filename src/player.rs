@@ -80,6 +80,8 @@ pub fn move_player(
 
     let speed = if keyboard.pressed(KeyCode::ShiftLeft) {
         10.0
+    } else if keyboard.pressed(KeyCode::ControlLeft) {
+        2.0  // crouch speed
     } else {
         5.0
     };

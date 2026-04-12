@@ -79,9 +79,16 @@ pub fn camera_follow(
     player_query: Query<(Entity, &Transform), With<Player>>,
     mut camera_query: Query<(&mut Transform,&CameraMode, &CameraAngle), (With<Camera3d>, Without<Player>)>,
     spatial_query: SpatialQuery,
+    keyboard: Res<ButtonInput<KeyCode>>,
 ) {
     let Ok((player_entity, player_transform)) = player_query.single() else { return; };
     let Ok((mut camera_transform, mode, angle)) = camera_query.single_mut() else { return; };
+
+    let crouch_offset = if keyboard.pressed(KeyCode::ControlLeft) {
+        -1.0
+    } else {
+        0.0
+    };
 
 
     let rotation = Quat::from_rotation_y(angle.yaw())
@@ -89,7 +96,7 @@ pub fn camera_follow(
 
     match *mode {
         CameraMode::TPS => {
-            let ideal_offset = rotation * Vec3::new(0.0, 5.0, angle.distance());
+            let ideal_offset = rotation * Vec3::new(0.0, 5.0 + crouch_offset, angle.distance());
             let ideal_pos = player_transform.translation + ideal_offset;
 
             // プレイヤー位置から理想位置へレイを飛ばす
@@ -114,7 +121,7 @@ pub fn camera_follow(
             camera_transform.look_at(player_transform.translation, Vec3::Y);
         }
         CameraMode::FPS => {
-            let offset = Vec3::new(0.0, 1.6, 0.0);
+            let offset = Vec3::new(0.0, 1.6 + crouch_offset, 0.0);
             camera_transform.translation = player_transform.translation + offset;
             camera_transform.rotation = rotation;
         }
