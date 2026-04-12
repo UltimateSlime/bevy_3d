@@ -23,6 +23,7 @@ pub struct PlayerAnimations {
     pub jumping: AnimationNodeIndex,
     pub crouch_idle: AnimationNodeIndex,
     pub crouch_walking: AnimationNodeIndex,
+    pub running: AnimationNodeIndex,
     pub graph: Handle<AnimationGraph>,
 }
 
@@ -31,6 +32,7 @@ pub enum PlayerState {
     #[default]
     Idle,
     Walking,
+    Running,
     Jumping,
     CrouchIdle,
     CrouchWalking, 
@@ -48,6 +50,7 @@ pub fn spawn_player(
     let walking = graph.add_clip(asset_server.load("models/player.glb#Animation2"),1.0, graph.root);
     let crouch_idle = graph.add_clip(asset_server.load("models/player.glb#Animation3"),1.0, graph.root);
     let crouch_walking = graph.add_clip(asset_server.load("models/player.glb#Animation4"),1.0, graph.root);
+    let running = graph.add_clip(asset_server.load("models/player.glb#Animation5"),1.0, graph.root);
 
     let graph_handle = graphs.add(graph);
 
@@ -57,6 +60,7 @@ pub fn spawn_player(
         jumping,
         crouch_idle,
         crouch_walking,
+        running,
         graph: graph_handle.clone(),
    });
 
@@ -97,15 +101,6 @@ pub fn move_player(
     let Ok((entity, mut velocity,mut transform, mut state)) = query.single_mut() else { return; };
     let Ok(angle) = camera_query.single() else { return; };
 
-
-    let speed = if keyboard.pressed(KeyCode::ShiftLeft) {
-        PLAYER_DASH_SPEED  // dash speed
-    } else if keyboard.pressed(KeyCode::ControlLeft) {
-        PLAYER_CROUCH_SPEED  // crouch speed
-    } else {
-        PLAYER_SPEED
-    };
-
     let can_stand = spatial_query.cast_shape(
         &Collider::cylinder(PLAYER_RADIUS, 0.0),
         transform.translation,
@@ -142,15 +137,6 @@ pub fn move_player(
         &ShapeCastConfig::from_max_distance(GROUNDED_CAST_DISTANCE),
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
-    
-    if grounded {
-        velocity.x = direction.x * speed;
-        velocity.z = direction.z * speed;
-    } else {
-        // 空中にいる場合は水平移動を減速
-        velocity.x *= 0.99;
-        velocity.z *= 0.99;
-    }
 
     let crouching = keyboard.pressed(KeyCode::ControlLeft) && grounded;
     let has_input = direction.length_squared() > 0.0;
@@ -163,6 +149,8 @@ pub fn move_player(
         if has_input && is_moving { PlayerState::CrouchWalking } else {PlayerState::CrouchIdle} 
     } else if matches!(*state, PlayerState::CrouchWalking | PlayerState::CrouchIdle) && !can_stand {
         if has_input && is_moving { PlayerState::CrouchWalking } else { PlayerState::CrouchIdle}
+    } else if keyboard.pressed(KeyCode::ShiftLeft) && has_input && is_moving {
+        PlayerState::Running 
     } else {
         if has_input && is_moving { PlayerState::Walking } else { PlayerState::Idle}   
     };
@@ -174,6 +162,21 @@ pub fn move_player(
             _ => {
                     commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
             }
+    }
+
+    let speed = match *state {
+        PlayerState::Running => PLAYER_DASH_SPEED,
+        PlayerState::CrouchIdle | PlayerState::CrouchWalking => PLAYER_CROUCH_SPEED,
+        _ => PLAYER_SPEED
+    };
+
+    if grounded {
+        velocity.x = direction.x * speed;
+        velocity.z = direction.z * speed;
+    } else {
+        // 空中にいる場合は水平移動を減速
+        velocity.x *= 0.99;
+        velocity.z *= 0.99;
     }
 
     if keyboard.just_pressed(KeyCode::Space) && grounded {
@@ -196,6 +199,7 @@ pub fn update_animation(
         PlayerState::Jumping => animations.jumping,
         PlayerState::CrouchIdle => animations.crouch_idle,
         PlayerState::CrouchWalking => animations.crouch_walking,
+        PlayerState::Running => animations.running,
     };
 
     if *current_anim != Some(next_anim) {
