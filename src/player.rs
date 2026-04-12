@@ -4,9 +4,8 @@ use crate::camera::CameraAngle;
 
 pub const PLAYER_RADIUS: f32 = 0.3;
 pub const PLAYER_HEIGHT: f32 = 1.1;             // 全高 = HEIGHT + RADIUSx2 = 1.7
-pub const PLAYER_CROUCH_HEIGHT: f32 = 0.2;      // 全高 = CROUCH_HEIGHT + RADIUSx2 = 0.8
+pub const PLAYER_CROUCH_HEIGHT: f32 = 1.1;      // 全高 = CROUCH_HEIGHT + RADIUSx2 = 0.8
 pub const PLAYER_MODEL_OFFSET: f32 = -0.85;     // モデル依存・キャラ差し替え時は要調整
-pub const PLAYER_CROUCH_MODEL_OFFSET: f32 = -0.5; // しゃがみ時のモデルオフセット・モデル依存
 pub const PLAYER_SPEED: f32 = 5.0;
 pub const PLAYER_DASH_SPEED: f32 = 10.0;
 pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
