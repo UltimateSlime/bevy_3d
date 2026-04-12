@@ -98,7 +98,7 @@ pub fn move_player(
 
     // 足元に地面があるか確認
     let grounded = spatial_query.cast_shape(
-        &Collider::cylinder(0.35, 0.0),
+        &Collider::cylinder(0.1, 0.0),
         transform.translation,              // レイの開始点 (プレイヤーの位置)
         Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
