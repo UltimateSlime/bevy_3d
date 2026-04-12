@@ -4,7 +4,7 @@ use crate::camera::CameraAngle;
 
 pub const PLAYER_RADIUS: f32 = 0.3;
 pub const PLAYER_HEIGHT: f32 = 1.1;             // 全高 = HEIGHT + RADIUSx2 = 1.7
-pub const PLAYER_CROUCH_HEIGHT: f32 = 1.1;      // 全高 = CROUCH_HEIGHT + RADIUSx2 = 0.8
+pub const PLAYER_CROUCH_HEIGHT: f32 = 0.2;      // 全高 = CROUCH_HEIGHT + RADIUSx2 = 1.0
 pub const PLAYER_SPEED: f32 = 5.0;
 pub const PLAYER_DASH_SPEED: f32 = 10.0;
 pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
@@ -15,6 +15,9 @@ pub const CAMERA_CROUCH_OFFSET: f32 = -1.0;    // しゃがみ時のオフセッ
 
 #[derive(Component)]
 pub struct Player;
+
+#[derive(Component)]
+pub struct PlayerModel;
 
 #[derive(Resource)]
 pub struct PlayerAnimations {
@@ -75,6 +78,7 @@ pub fn spawn_player(
     )).with_child((
         SceneRoot(asset_server.load("models/player.glb#Scene0")),
         Transform::from_xyz(0.0, -(PLAYER_HEIGHT / 2.0 + PLAYER_RADIUS), 0.0),
+        PlayerModel,
     ));
 }
 
@@ -214,5 +218,21 @@ pub fn update_animation(
             }
     
        };
+    }
+}
+
+pub fn update_player_model_offset(
+    player_query: Query<&PlayerState, With<Player>>,
+    mut model_query: Query<&mut Transform, (With<PlayerModel>, Without<Player>)>,
+) {
+    let Ok(state) = player_query.single() else { return; };
+
+    let target_y = match *state {
+        PlayerState::CrouchIdle | PlayerState::CrouchWalking => -(PLAYER_CROUCH_HEIGHT / 2.0 + PLAYER_RADIUS),
+        _ => -(PLAYER_HEIGHT / 2.0 + PLAYER_RADIUS),
+    };
+
+    for mut transform in &mut model_query {
+        transform.translation.y = target_y;
     }
 }
