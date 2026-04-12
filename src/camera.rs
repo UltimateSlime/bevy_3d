@@ -4,6 +4,9 @@ use bevy::window::{CursorGrabMode, CursorOptions};
 use avian3d::prelude::*;
 use crate::player::Player;
 
+pub const CAMERA_FPS_HEIGHT: f32 = 1.6;        // 目の高さ・モデル依存
+pub const CAMERA_CROUCH_OFFSET: f32 = -1.0;    // しゃがみ時のオフセット
+
 #[derive(Component, PartialEq, Clone, Copy)]
 pub enum CameraMode {
     TPS,
@@ -19,7 +22,7 @@ pub struct CameraAngle {
 
 impl Default for CameraAngle{
     fn default() -> Self {
-        Self { yaw: 0.0, pitch: 0.3, distance: 10.0 }
+        Self { yaw: 0.0, pitch: 0.5, distance: 5.0 }
     }
 }
 
@@ -45,7 +48,7 @@ pub fn spawn_camera(
     commands.spawn(
     (
         Camera3d::default(),
-        Transform::from_xyz(0.0, 2.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(0.0, 2.0, -5.0).looking_at(Vec3::ZERO, Vec3::Y),
         CameraMode::TPS,
         CameraAngle::default(),
     ));
@@ -85,7 +88,7 @@ pub fn camera_follow(
     let Ok((mut camera_transform, mode, angle)) = camera_query.single_mut() else { return; };
 
     let crouch_offset = if keyboard.pressed(KeyCode::ControlLeft) {
-        -1.0
+        CAMERA_CROUCH_OFFSET
     } else {
         0.0
     };
@@ -121,7 +124,7 @@ pub fn camera_follow(
             camera_transform.look_at(player_transform.translation, Vec3::Y);
         }
         CameraMode::FPS => {
-            let offset = Vec3::new(0.0, 1.6 + crouch_offset, 0.0);
+            let offset = Vec3::new(0.0, CAMERA_FPS_HEIGHT + crouch_offset, 0.0);
             camera_transform.translation = player_transform.translation + offset;
             camera_transform.rotation = rotation;
         }
