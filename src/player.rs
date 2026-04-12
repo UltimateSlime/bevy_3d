@@ -78,7 +78,12 @@ pub fn move_player(
     let Ok(angle) = camera_query.single() else { return; };
 
 
-    let speed = 5.0;
+    let speed = if keyboard.pressed(KeyCode::ShiftLeft) {
+        10.0
+    } else {
+        5.0
+    };
+
     let mut direction = Vec3::ZERO;
 
     if keyboard.pressed(KeyCode::KeyW) { direction.z -= 1.0; }
