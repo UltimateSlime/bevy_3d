@@ -90,9 +90,6 @@ pub fn move_player(
     let yaw_rotation = Quat::from_rotation_y(angle.yaw());
     let direction = yaw_rotation * direction.normalize_or_zero();
 
-    velocity.x = direction.x * speed;
-    velocity.z = direction.z * speed;
-
     // 移動方向にプレイヤーを向かせる
     if direction.length_squared() > 0.01 {
         let target_rotation = Quat::from_rotation_y(direction.x.atan2(direction.z));
@@ -109,6 +106,12 @@ pub fn move_player(
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
     
+    if grounded {
+        velocity.x = direction.x * speed;
+        velocity.z = direction.z * speed;
+    }
+
+
     let has_input = direction.length_squared() > 0.0;
     let is_moving = velocity.x.abs() > 0.1 || velocity.z.abs() > 0.1;
 
