@@ -98,7 +98,7 @@ pub fn move_player(
 
     // 足元に地面があるか確認
     let grounded = spatial_query.cast_shape(
-        &Collider::cylinder(0.1, 0.0),
+        &Collider::cylinder(0.05, 0.0),
         transform.translation,              // レイの開始点 (プレイヤーの位置)
         Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
@@ -109,6 +109,10 @@ pub fn move_player(
     if grounded {
         velocity.x = direction.x * speed;
         velocity.z = direction.z * speed;
+    } else {
+        // 空中にいる場合は水平移動を減速
+        velocity.x *= 0.99;
+        velocity.z *= 0.99;
     }
 
 
