@@ -28,11 +28,11 @@ fn main() {
             world::setup,
             player::spawn_player,
             camera::spawn_camera,
-        ))    
+        ))
+        .add_systems(Update, player::setup_player_animation.before(player::update_animation))    
         .add_systems(Update, (
             world::asset_loaded,
             camera::update_camera,
-            player::setup_player_animation,
             player::move_player,
             player::update_animation,
             camera::camera_follow,
