@@ -11,6 +11,8 @@ pub const PLAYER_DASH_SPEED: f32 = 10.0;
 pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
 pub const JUMP_VELOCITY: f32 = 8.0;
 pub const GROUNDED_CAST_DISTANCE: f32 = 1.1;
+pub const CAMERA_FPS_HEIGHT: f32 = 1.6;        // 目の高さ・モデル依存
+pub const CAMERA_CROUCH_OFFSET: f32 = -1.0;    // しゃがみ時のオフセット・モデル依存
 
 #[derive(Component)]
 pub struct Player;
@@ -28,7 +30,9 @@ pub enum PlayerState {
     #[default]
     Idle,
     Walking,
-    Jumping, 
+    Jumping,
+    CrouchIdle,
+    CrouchWalking, 
 }
 
 pub fn spawn_player(
@@ -139,13 +143,17 @@ pub fn move_player(
         velocity.z *= 0.99;
     }
 
-
+    let crouching = keyboard.pressed(KeyCode::ControlLeft) && grounded;
     let has_input = direction.length_squared() > 0.0;
     let is_moving = velocity.x.abs() > 0.1 || velocity.z.abs() > 0.1;
 
     // PlayerStateを更新
     *state = if !grounded {
         PlayerState::Jumping
+    } else if crouching && (has_input && is_moving) {
+        PlayerState::CrouchWalking
+    } else if crouching {
+        PlayerState::CrouchIdle
     } else if has_input && is_moving {
         PlayerState::Walking
     } else {
@@ -170,6 +178,8 @@ pub fn update_animation(
         PlayerState::Idle => animations.idle,
         PlayerState::Walking => animations.walking,
         PlayerState::Jumping => animations.jumping,
+        PlayerState::CrouchIdle => animations.idle,
+        PlayerState::CrouchWalking => animations.walking,
     };
 
     if *current_anim != Some(next_anim) {

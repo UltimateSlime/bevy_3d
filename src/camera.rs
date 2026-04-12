@@ -2,10 +2,9 @@ use bevy::prelude::*;
 use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
 use bevy::window::{CursorGrabMode, CursorOptions};
 use avian3d::prelude::*;
-use crate::player::Player;
+use crate::player::{Player, PlayerState, CAMERA_CROUCH_OFFSET, CAMERA_FPS_HEIGHT};
 
-pub const CAMERA_FPS_HEIGHT: f32 = 1.6;        // 目の高さ・モデル依存
-pub const CAMERA_CROUCH_OFFSET: f32 = -1.0;    // しゃがみ時のオフセット
+
 
 #[derive(Component, PartialEq, Clone, Copy)]
 pub enum CameraMode {
@@ -79,18 +78,16 @@ pub fn update_camera(
 }
 
 pub fn camera_follow(
-    player_query: Query<(Entity, &Transform), With<Player>>,
+    player_query: Query<(Entity, &Transform, &PlayerState), With<Player>>,
     mut camera_query: Query<(&mut Transform,&CameraMode, &CameraAngle), (With<Camera3d>, Without<Player>)>,
     spatial_query: SpatialQuery,
-    keyboard: Res<ButtonInput<KeyCode>>,
 ) {
-    let Ok((player_entity, player_transform)) = player_query.single() else { return; };
+    let Ok((player_entity, player_transform, player_state)) = player_query.single() else { return; };
     let Ok((mut camera_transform, mode, angle)) = camera_query.single_mut() else { return; };
 
-    let crouch_offset = if keyboard.pressed(KeyCode::ControlLeft) {
-        CAMERA_CROUCH_OFFSET
-    } else {
-        0.0
+    let crouch_offset = match *player_state {
+        PlayerState::CrouchIdle | PlayerState::CrouchWalking => CAMERA_CROUCH_OFFSET,
+        _ => 0.0,
     };
 
 
