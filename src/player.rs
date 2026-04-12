@@ -2,6 +2,16 @@ use bevy::prelude::*;
 use avian3d::prelude::*;
 use crate::camera::CameraAngle; 
 
+pub const PLAYER_RADIUS: f32 = 0.3;
+pub const PLAYER_HEIGHT: f32 = 1.1;             // 全高 = HEIGHT + RADIUSx2 = 1.7
+pub const PLAYER_CROUCH_HEIGHT: f32 = 0.2;      // 全高 = CROUCH_HEIGHT + RADIUSx2 = 0.8
+pub const PLAYER_MODEL_OFFSET: f32 = -0.85;     // モデル依存・キャラ差し替え時は要調整
+pub const PLAYER_SPEED: f32 = 5.0;
+pub const PLAYER_DASH_SPEED: f32 = 10.0;
+pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
+pub const JUMP_VELOCITY: f32 = 8.0;
+pub const GROUNDED_CAST_DISTANCE: f32 = 1.1;
+
 #[derive(Component)]
 pub struct Player;
 
@@ -42,16 +52,16 @@ pub fn spawn_player(
    });
 
     commands.spawn((
-        Transform::from_xyz(0.0, 2.0, 0.0),
+        Transform::from_xyz(0.0, 10.0, 0.0),
         RigidBody::Dynamic,
-        Collider::capsule(0.3,1.1),
+        Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
         LinearVelocity::ZERO,
         LockedAxes::ROTATION_LOCKED,
         Player,
         PlayerState::Idle,
     )).with_child((
         SceneRoot(asset_server.load("models/player.glb#Scene0")),
-        Transform::from_xyz(0.0, -0.85, 0.0),
+        Transform::from_xyz(0.0, PLAYER_MODEL_OFFSET, 0.0),
     ));
 }
 
@@ -80,17 +90,17 @@ pub fn move_player(
 
 
     let speed = if keyboard.pressed(KeyCode::ShiftLeft) {
-        10.0
+        PLAYER_DASH_SPEED  // dash speed
     } else if keyboard.pressed(KeyCode::ControlLeft) {
-        2.0  // crouch speed
+        PLAYER_CROUCH_SPEED  // crouch speed
     } else {
-        5.0
+        PLAYER_SPEED
     };
 
     if keyboard.pressed(KeyCode::ControlLeft) {
-        commands.entity(entity).insert(Collider::capsule(0.3, 0.2));
+        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT));
     } else {
-        commands.entity(entity).insert(Collider::capsule(0.3, 1.1));
+        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
     }
 
     let mut direction = Vec3::ZERO;
@@ -116,7 +126,7 @@ pub fn move_player(
         transform.translation,              // レイの開始点 (プレイヤーの位置)
         Quat::IDENTITY,
         Dir3::NEG_Y,               // 下方向    
-        &ShapeCastConfig::from_max_distance(1.1),
+        &ShapeCastConfig::from_max_distance(GROUNDED_CAST_DISTANCE),
         &SpatialQueryFilter::from_excluded_entities(vec![entity]),  // 自分自身を除外
     ).is_some();
     
@@ -143,7 +153,7 @@ pub fn move_player(
     };
 
     if keyboard.just_pressed(KeyCode::Space) && grounded {
-        velocity.y = 8.0; // ジャンプの高さを調整
+        velocity.y = JUMP_VELOCITY; 
     }
 
 }
