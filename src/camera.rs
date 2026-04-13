@@ -111,7 +111,7 @@ pub fn camera_follow(
             let ideal_pos = player_transform.translation + ideal_offset;
 
             // プレイヤー位置から理想位置へレイを飛ばす
-            let direction = Dir3::new(ideal_offset.normalize()).unwrap();
+            let Ok(direction) = Dir3::new(ideal_offset.normalize()) else { return; };
             let distance = ideal_offset.length();
 
             let actual_pos = match spatial_query.cast_ray(
