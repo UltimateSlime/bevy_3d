@@ -12,6 +12,7 @@ pub const JUMP_VELOCITY: f32 = 8.0;
 pub const GROUNDED_CAST_DISTANCE: f32 = 1.1;
 pub const CAMERA_FPS_HEIGHT: f32 = 1.6; // 目の高さ・モデル依存
 pub const CAMERA_CROUCH_OFFSET: f32 = -1.0; // しゃがみ時のオフセット・モデル依存
+pub const PLAYER_CROUCH_OFFSET_Y: f32 = (PLAYER_HEIGHT - PLAYER_CROUCH_HEIGHT) / 2.0; // しゃがみ時のYオフセット
 
 #[derive(Component)]
 pub struct Player;
@@ -122,7 +123,6 @@ pub fn setup_player_animation(
 }
 
 pub fn move_player(
-    mut commands: Commands,
     keyboard: Res<ButtonInput<KeyCode>>,
     mut query: Query<
         (
@@ -218,19 +218,6 @@ pub fn move_player(
         PlayerState::Idle
     };
 
-    match *state {
-        PlayerState::CrouchIdle | PlayerState::CrouchWalking => {
-            commands
-                .entity(entity)
-                .insert(Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT));
-        }
-        _ => {
-            commands
-                .entity(entity)
-                .insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
-        }
-    }
-
     let speed = match *state {
         PlayerState::Running => PLAYER_DASH_SPEED,
         PlayerState::CrouchIdle | PlayerState::CrouchWalking => PLAYER_CROUCH_SPEED,
@@ -301,5 +288,32 @@ pub fn update_player_model_offset(
 
     for mut transform in &mut model_query {
         transform.translation.y = target_y;
+    }
+}
+
+pub fn update_player_collider(
+    mut commands: Commands,
+    mut query: Query<(Entity,  &PlayerState),(With<Player>, Changed<PlayerState>)>,
+) {
+    let Ok((entity, state)) = query.single_mut() else {
+        return;
+    };
+    
+  println!("state changed: {:?}", state);
+
+    match *state {
+        PlayerState::CrouchIdle | PlayerState::CrouchWalking => {
+            commands.entity(entity).insert((
+                Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT),
+                ColliderTransform::from(Transform::from_xyz(0.0, -PLAYER_CROUCH_OFFSET_Y, 0.0)),
+            ));
+            
+        }
+        _ => {
+            commands.entity(entity).insert((
+                Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
+                ColliderTransform::default(),
+            ));
+        }
     }
 }
