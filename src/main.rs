@@ -36,6 +36,7 @@ fn main() {
                 world::asset_loaded,
                 camera::update_camera,
                 player::move_player,
+                player::update_player_collider,
                 player::update_player_model_offset,
                 player::update_animation,
                 camera::camera_follow,
