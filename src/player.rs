@@ -212,12 +212,10 @@ pub fn move_player(
         }
     } else if keyboard.pressed(KeyCode::ShiftLeft) && has_input && is_moving {
         PlayerState::Running
+    } else if has_input && is_moving {
+        PlayerState::Walking
     } else {
-        if has_input && is_moving {
-            PlayerState::Walking
-        } else {
-            PlayerState::Idle
-        }
+        PlayerState::Idle
     };
 
     match *state {
