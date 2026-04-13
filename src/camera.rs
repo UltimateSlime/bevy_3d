@@ -1,10 +1,8 @@
-use bevy::prelude::*;
-use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
-use bevy::window::{CursorGrabMode, CursorOptions};
+use crate::player::{CAMERA_CROUCH_OFFSET, CAMERA_FPS_HEIGHT, Player, PlayerState};
 use avian3d::prelude::*;
-use crate::player::{Player, PlayerState, CAMERA_CROUCH_OFFSET, CAMERA_FPS_HEIGHT};
-
-
+use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
+use bevy::prelude::*;
+use bevy::window::{CursorGrabMode, CursorOptions};
 
 #[derive(Component, PartialEq, Clone, Copy)]
 pub enum CameraMode {
@@ -19,9 +17,13 @@ pub struct CameraAngle {
     distance: f32,
 }
 
-impl Default for CameraAngle{
+impl Default for CameraAngle {
     fn default() -> Self {
-        Self { yaw: 0.0, pitch: 0.5, distance: -5.0 }
+        Self {
+            yaw: 0.0,
+            pitch: 0.5,
+            distance: -5.0,
+        }
     }
 }
 
@@ -32,20 +34,23 @@ impl CameraAngle {
     pub fn add_pitch(&mut self, delta: f32) {
         self.pitch = (self.pitch - delta).clamp(-0.5, 1.4);
     }
-    pub fn add_distance(&mut self, delta:f32) {
+    pub fn add_distance(&mut self, delta: f32) {
         self.distance = (self.distance - delta).clamp(2.0, 100.0);
     }
-    pub fn yaw(&self) -> f32 { self.yaw }
-    pub fn pitch(&self) -> f32 { self.pitch }
-    pub fn distance(&self) -> f32 { self.distance}
+    pub fn yaw(&self) -> f32 {
+        self.yaw
+    }
+    pub fn pitch(&self) -> f32 {
+        self.pitch
+    }
+    pub fn distance(&self) -> f32 {
+        self.distance
+    }
 }
 
-    // カメラ
-pub fn spawn_camera(
-    mut commands: Commands,
-) {
-    commands.spawn(
-    (
+// カメラ
+pub fn spawn_camera(mut commands: Commands) {
+    commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(0.0, 2.0, -5.0).looking_at(Vec3::ZERO, Vec3::Y),
         CameraMode::TPS,
@@ -53,14 +58,15 @@ pub fn spawn_camera(
     ));
 }
 
-
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_motion: Res<AccumulatedMouseMotion>,
     mouse_scroll: Res<AccumulatedMouseScroll>,
     mut camera_query: Query<(&mut CameraMode, &mut CameraAngle), With<Camera3d>>,
 ) {
-    let Ok((mut mode, mut angle)) = camera_query.single_mut() else {return; };
+    let Ok((mut mode, mut angle)) = camera_query.single_mut() else {
+        return;
+    };
 
     // モード切替
     if keyboard.just_pressed(KeyCode::KeyV) {
@@ -79,20 +85,25 @@ pub fn update_camera(
 
 pub fn camera_follow(
     player_query: Query<(Entity, &Transform, &PlayerState), With<Player>>,
-    mut camera_query: Query<(&mut Transform,&CameraMode, &CameraAngle), (With<Camera3d>, Without<Player>)>,
+    mut camera_query: Query<
+        (&mut Transform, &CameraMode, &CameraAngle),
+        (With<Camera3d>, Without<Player>),
+    >,
     spatial_query: SpatialQuery,
 ) {
-    let Ok((player_entity, player_transform, player_state)) = player_query.single() else { return; };
-    let Ok((mut camera_transform, mode, angle)) = camera_query.single_mut() else { return; };
+    let Ok((player_entity, player_transform, player_state)) = player_query.single() else {
+        return;
+    };
+    let Ok((mut camera_transform, mode, angle)) = camera_query.single_mut() else {
+        return;
+    };
 
     let crouch_offset = match *player_state {
         PlayerState::CrouchIdle | PlayerState::CrouchWalking => CAMERA_CROUCH_OFFSET,
         _ => 0.0,
     };
 
-
-    let rotation = Quat::from_rotation_y(angle.yaw())
-        * Quat::from_rotation_x(angle.pitch());
+    let rotation = Quat::from_rotation_y(angle.yaw()) * Quat::from_rotation_x(angle.pitch());
 
     match *mode {
         CameraMode::TPS => {
@@ -112,7 +123,8 @@ pub fn camera_follow(
             ) {
                 Some(hit) => {
                     // なにかにあたったらその少し手前に置く
-                    player_transform.translation + ideal_offset.normalize() * (hit.distance - 0.3).max(0.1)
+                    player_transform.translation
+                        + ideal_offset.normalize() * (hit.distance - 0.3).max(0.1)
                 }
                 None => ideal_pos, // なにもなければ理想の位置
             };
@@ -141,4 +153,3 @@ pub fn handle_focus(
         cursor_options.visible = true;
     }
 }
-
