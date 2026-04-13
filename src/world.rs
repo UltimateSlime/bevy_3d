@@ -1,7 +1,7 @@
-use bevy::prelude::*;
-use bevy::core_pipeline::Skybox;
-use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
 use avian3d::prelude::*;
+use bevy::core_pipeline::Skybox;
+use bevy::prelude::*;
+use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
 
 #[derive(Resource)]
 pub struct SkyboxHandle {
@@ -22,8 +22,6 @@ pub fn setup(
         is_loaded: false,
     });
 
-
-
     // 太陽光
     commands.spawn((
         DirectionalLight {
@@ -31,7 +29,7 @@ pub fn setup(
             shadows_enabled: true,
             ..default()
         },
-        Transform::from_xyz(4.0,8.0,4.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(4.0, 8.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // 地面
@@ -49,44 +47,42 @@ pub fn setup(
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
         Transform::from_xyz(0.0, 0.5, 0.0),
         RigidBody::Static,
-        Collider::cuboid(1.0, 1.0, 1.0), 
-
+        Collider::cuboid(1.0, 1.0, 1.0),
     ));
 
     // 箱を複数配置
     let positions = [
-        (0.0, -2.0, 2.0, Color::srgb(0.8, 0.6, 0.4)),// (x, z, 高さ) ベージュ
+        (0.0, -2.0, 2.0, Color::srgb(0.8, 0.6, 0.4)), // (x, z, 高さ) ベージュ
         (3.0, -4.0, 1.0, Color::srgb(0.6, 0.6, 0.8)), // 青っぽい
         (-3.0, -6.0, 4.0, Color::srgb(0.8, 0.4, 0.4)), // 赤っぽい
         (5.0, -8.0, 1.5, Color::srgb(0.8, 0.9, 0.6)), // yellow
-        (-5.0, -5.0, 3.0, Color::srgb( 0.5, 0.7, 0.5)), // green
-
+        (-5.0, -5.0, 3.0, Color::srgb(0.5, 0.7, 0.5)), // green
     ];
 
     for (x, z, height, color) in positions {
         commands.spawn((
             Mesh3d(meshes.add(Cuboid::new(1.0, height, 1.0))),
             MeshMaterial3d(materials.add(color)),
-            Transform::from_xyz(x, height / 2.0,  z),
+            Transform::from_xyz(x, height / 2.0, z),
             RigidBody::Static,
-            Collider::cuboid(1.0, height, 1.0), 
+            Collider::cuboid(1.0, height, 1.0),
         ));
     }
 
     // 落ちる箱
     commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(1.0,1.0, 1.0))),
-        MeshMaterial3d(materials.add(Color::srgb(0.8,0.3, 0.3))),
-        Transform::from_xyz(2.0, 20.0, -3.0),  // 高い位置からスタート
-        RigidBody::Dynamic,  // 動的な剛体として設定
-        Collider::cuboid(1.0, 1.0, 1.0), // コライダーを追加
+        Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
+        MeshMaterial3d(materials.add(Color::srgb(0.8, 0.3, 0.3))),
+        Transform::from_xyz(2.0, 20.0, -3.0), // 高い位置からスタート
+        RigidBody::Dynamic,                   // 動的な剛体として設定
+        Collider::cuboid(1.0, 1.0, 1.0),      // コライダーを追加
     ));
 
     // 低い天井 (しゃがみテスト用)
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(10.0, 0.5, 10.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.5, 0.8))),
-        Transform:: from_xyz(20.0, 1.8, 0.0),
+        Transform::from_xyz(20.0, 1.8, 0.0),
         RigidBody::Static,
         Collider::cuboid(10.0, 0.5, 10.0),
     ));
@@ -100,26 +96,29 @@ pub fn asset_loaded(
     mut skybox_res: ResMut<SkyboxHandle>,
     camera_query: Query<Entity, With<Camera3d>>,
 ) {
-    if skybox_res.is_loaded { return; } 
-    if !asset_server.load_state(&skybox_res.image).is_loaded() { return; }  // まだロードされていない場合は何もしない
+    if skybox_res.is_loaded {
+        return;
+    }
+    if !asset_server.load_state(&skybox_res.image).is_loaded() {
+        return;
+    } // まだロードされていない場合は何もしない
 
     let image = images.get_mut(&skybox_res.image).unwrap();
     if image.texture_descriptor.array_layer_count() == 1 {
         let layers = image.height() / image.width();
-        let _= image.reinterpret_stacked_2d_as_array(layers);
+        let _ = image.reinterpret_stacked_2d_as_array(layers);
         image.texture_view_descriptor = Some(TextureViewDescriptor {
             dimension: Some(TextureViewDimension::Cube),
             ..default()
         });
     }
 
-    if let Ok(entity) = camera_query.single(){
+    if let Ok(entity) = camera_query.single() {
         commands.entity(entity).insert(Skybox {
             image: skybox_res.image.clone(),
             brightness: 1000.0,
             ..default()
         });
-
     }
 
     skybox_res.is_loaded = true;
