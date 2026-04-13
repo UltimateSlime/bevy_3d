@@ -103,7 +103,7 @@ pub fn asset_loaded(
         return;
     } // まだロードされていない場合は何もしない
 
-    let image = images.get_mut(&skybox_res.image).unwrap();
+    let Some(image) = images.get_mut(&skybox_res.image) else { return; };
     if image.texture_descriptor.array_layer_count() == 1 {
         let layers = image.height() / image.width();
         let _ = image.reinterpret_stacked_2d_as_array(layers);
