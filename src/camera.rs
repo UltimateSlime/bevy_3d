@@ -4,6 +4,19 @@ use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions};
 
+const CAMERA_SENSITIVITY: f32 = 0.003;
+const CAMERA_TPS_HEIGHT: f32 = 5.0;
+const CAMERA_INITIAL_DISTANCE: f32 = 5.0;
+const CAMERA_INITIAL_YAW: f32 = std::f32::consts::PI;
+const CAMERA_INITIAL_PITCH: f32 = 0.4;
+const CAMERA_WALL_MIN_DISTANCE: f32 = 0.3;
+const CAMERA_WALL_CLAMP_MIN: f32 = 0.1;
+const CAMERA_PITCH_MIN: f32 = -0.5;
+const CAMERA_PITCH_MAX: f32 = 1.4;
+const CAMERA_DISTANCE_MIN: f32 = 2.0;
+const CAMERA_DISTANCE_MAX: f32 = 100.0;
+
+
 #[derive(Component, PartialEq, Clone, Copy)]
 pub enum CameraMode {
     TPS,
@@ -20,9 +33,9 @@ pub struct CameraAngle {
 impl Default for CameraAngle {
     fn default() -> Self {
         Self {
-            yaw: 0.0,
-            pitch: 0.5,
-            distance: -5.0,
+            yaw: CAMERA_INITIAL_YAW,
+            pitch: CAMERA_INITIAL_PITCH,
+            distance: CAMERA_INITIAL_DISTANCE,
         }
     }
 }
@@ -32,10 +45,10 @@ impl CameraAngle {
         self.yaw -= delta;
     }
     pub fn add_pitch(&mut self, delta: f32) {
-        self.pitch = (self.pitch - delta).clamp(-0.5, 1.4);
+        self.pitch = (self.pitch - delta).clamp(CAMERA_PITCH_MIN, CAMERA_PITCH_MAX);
     }
     pub fn add_distance(&mut self, delta: f32) {
-        self.distance = (self.distance - delta).clamp(2.0, 100.0);
+        self.distance = (self.distance - delta).clamp(CAMERA_DISTANCE_MIN, CAMERA_DISTANCE_MAX);
     }
     pub fn yaw(&self) -> f32 {
         self.yaw
@@ -76,7 +89,7 @@ pub fn update_camera(
         };
     }
 
-    let sensitivity = 0.003;
+    let sensitivity = CAMERA_SENSITIVITY;
     angle.add_yaw(mouse_motion.delta.x * sensitivity);
     angle.add_pitch(mouse_motion.delta.y * sensitivity);
 
@@ -107,7 +120,7 @@ pub fn camera_follow(
 
     match *mode {
         CameraMode::TPS => {
-            let ideal_offset = rotation * Vec3::new(0.0, 5.0 + crouch_offset, angle.distance());
+            let ideal_offset = rotation * Vec3::new(0.0, CAMERA_TPS_HEIGHT + crouch_offset, angle.distance());
             let ideal_pos = player_transform.translation + ideal_offset;
 
             // プレイヤー位置から理想位置へレイを飛ばす
@@ -124,7 +137,7 @@ pub fn camera_follow(
                 Some(hit) => {
                     // なにかにあたったらその少し手前に置く
                     player_transform.translation
-                        + ideal_offset.normalize() * (hit.distance - 0.3).max(0.1)
+                        + ideal_offset.normalize() * (hit.distance - CAMERA_WALL_MIN_DISTANCE).max(CAMERA_WALL_CLAMP_MIN)
                 }
                 None => ideal_pos, // なにもなければ理想の位置
             };

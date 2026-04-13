@@ -3,6 +3,10 @@ use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
 
+const WORLD_ILLUMINANCE: f32 = 10000.0;
+const WORLD_BRIGHTNESS: f32 = 1000.0;
+const WORLD_HALF_EXTENT: f32 = 50.0;
+
 #[derive(Resource)]
 pub struct SkyboxHandle {
     pub image: Handle<Image>,
@@ -25,7 +29,7 @@ pub fn setup(
     // 太陽光
     commands.spawn((
         DirectionalLight {
-            illuminance: 10000.0,
+            illuminance: WORLD_ILLUMINANCE,
             shadows_enabled: true,
             ..default()
         },
@@ -34,11 +38,11 @@ pub fn setup(
 
     // 地面
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::new(50.0, 50.0)))),
+        Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::new(WORLD_HALF_EXTENT, WORLD_HALF_EXTENT)))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RigidBody::Static,
-        Collider::cuboid(100.0, 0.0, 100.0),
+        Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.0, WORLD_HALF_EXTENT * 2.0),
     ));
 
     // 箱
@@ -116,10 +120,9 @@ pub fn asset_loaded(
     if let Ok(entity) = camera_query.single() {
         commands.entity(entity).insert(Skybox {
             image: skybox_res.image.clone(),
-            brightness: 1000.0,
+            brightness: WORLD_BRIGHTNESS,
             ..default()
         });
     }
-
     skybox_res.is_loaded = true;
 }
