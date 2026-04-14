@@ -3,8 +3,8 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 
 pub const PLAYER_RADIUS: f32 = 0.3;
-pub const PLAYER_HEIGHT: f32 = 1.1; // 全高 = HEIGHT + RADIUSx2 = 1.7
-pub const PLAYER_CROUCH_HEIGHT: f32 = 0.2; // 全高 = CROUCH_HEIGHT + RADIUSx2 = 1.0
+pub const PLAYER_HEIGHT: f32 = 1.2; // 全高 = HEIGHT + RADIUSx2 = 1.7
+pub const PLAYER_CROUCH_HEIGHT: f32 = 0.55; // 全高 = CROUCH_HEIGHT + RADIUSx2 = 1.0
 pub const PLAYER_SPEED: f32 = 5.0;
 pub const PLAYER_DASH_SPEED: f32 = 10.0;
 pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
@@ -182,7 +182,7 @@ pub fn move_player(
     // 足元に地面があるか確認
     let grounded = spatial_query
         .cast_shape(
-            &Collider::cylinder(0.05, 0.0),
+            &Collider::cylinder(PLAYER_RADIUS * 0.8, 0.0),
             transform.translation, // レイの開始点 (プレイヤーの位置)
             Quat::IDENTITY,
             Dir3::NEG_Y, // 下方向

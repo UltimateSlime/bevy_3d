@@ -22,6 +22,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
+        .add_plugins(PhysicsDebugPlugin::default())
         .add_systems(
             Startup,
             (world::setup, player::spawn_player, camera::spawn_camera),
