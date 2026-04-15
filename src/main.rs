@@ -1,6 +1,7 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions};
+use crate::player::PlayerVelocity;
 
 mod camera;
 mod player;
@@ -23,6 +24,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
         .add_plugins(PhysicsDebugPlugin::default())
+        .init_resource::<PlayerVelocity>()
         .add_systems(
             Startup,
             (world::setup, player::spawn_player, camera::spawn_camera),
