@@ -3,22 +3,25 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 
 pub const PLAYER_RADIUS: f32 = 0.3;
-pub const PLAYER_HEIGHT: f32 = 1.2; // 全高 = HEIGHT + RADIUSx2 = 1.7
-pub const PLAYER_CROUCH_HEIGHT: f32 = 0.55; // 全高 = CROUCH_HEIGHT + RADIUSx2 = 1.0
+pub const PLAYER_HEIGHT: f32 = 1.2; // 全高 = HEIGHT + RADIUSx2 
+pub const PLAYER_CROUCH_HEIGHT: f32 = 0.55; // 全高 = CROUCH_HEIGHT + RADIUSx2 
 pub const PLAYER_SPEED: f32 = 5.0;
 pub const PLAYER_DASH_SPEED: f32 = 10.0;
 pub const PLAYER_CROUCH_SPEED: f32 = 2.0;
 pub const JUMP_VELOCITY: f32 = 8.0;
-pub const GROUNDED_CAST_DISTANCE: f32 = 1.1;
+pub const GROUNDED_CAST_DISTANCE: f32 = PLAYER_HEIGHT / 2.0 + PLAYER_RADIUS + 0.01;
 pub const CAMERA_FPS_HEIGHT: f32 = 1.6; // 目の高さ・モデル依存
 pub const CAMERA_CROUCH_OFFSET: f32 = -1.0; // しゃがみ時のオフセット・モデル依存
-pub const PLAYER_CROUCH_OFFSET_Y: f32 = (PLAYER_HEIGHT - PLAYER_CROUCH_HEIGHT) / 2.0; // しゃがみ時のYオフセット
+pub const GRAVITY: f32 = -9.8;
 
 #[derive(Component)]
 pub struct Player;
 
 #[derive(Component)]
 pub struct PlayerModel;
+
+#[derive(Resource, Default)]
+pub struct PlayerVelocity(pub Vec3);
 
 #[derive(Resource)]
 pub struct PlayerAnimations {
@@ -92,13 +95,12 @@ pub fn spawn_player(
         graph: graph_handle.clone(),
     });
 
+
     commands
         .spawn((
             Transform::from_xyz(0.0, 10.0, 0.0),
-            RigidBody::Dynamic,
+            RigidBody::Kinematic,
             Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
-            LinearVelocity::ZERO,
-            LockedAxes::ROTATION_LOCKED,
             Player,
             PlayerState::Idle,
         ))
@@ -124,10 +126,10 @@ pub fn setup_player_animation(
 
 pub fn move_player(
     keyboard: Res<ButtonInput<KeyCode>>,
+    mut player_velocity: ResMut<PlayerVelocity>,
     mut query: Query<
         (
             Entity,
-            &mut LinearVelocity,
             &mut Transform,
             &mut PlayerState,
         ),
@@ -135,8 +137,9 @@ pub fn move_player(
     >,
     spatial_query: SpatialQuery,
     camera_query: Query<&CameraAngle, With<Camera3d>>,
+    time: Res<Time>,
 ) {
-    let Ok((entity, mut velocity, mut transform, mut state)) = query.single_mut() else {
+    let Ok((entity, mut transform, mut state)) = query.single_mut() else {
         return;
     };
     let Ok(angle) = camera_query.single() else {
@@ -193,7 +196,7 @@ pub fn move_player(
 
     let crouching = keyboard.pressed(KeyCode::ControlLeft) && grounded;
     let has_input = direction.length_squared() > 0.0;
-    let is_moving = velocity.x.abs() > 0.1 || velocity.z.abs() > 0.1;
+    let is_moving = player_velocity.0.x.abs() > 0.0 || player_velocity.0.z.abs() > 0.0;
 
     // PlayerStateを更新
     *state = if !grounded {
@@ -224,18 +227,76 @@ pub fn move_player(
         _ => PLAYER_SPEED,
     };
 
+    let dt = time.delta_secs();
+
+    // 水平方向の速度を設定
     if grounded {
-        velocity.x = direction.x * speed;
-        velocity.z = direction.z * speed;
+        player_velocity.0.x = direction.x * speed;
+        player_velocity.0.z = direction.z * speed;
     } else {
-        // 空中にいる場合は水平移動を減速
-        velocity.x *= 0.99;
-        velocity.z *= 0.99;
+        player_velocity.0.x *=0.99;
+        player_velocity.0.z *=0.99;
     }
 
-    if keyboard.just_pressed(KeyCode::Space) && grounded {
-        velocity.y = JUMP_VELOCITY;
+    // 重力
+    if grounded && player_velocity.0.y < 0.0 {
+        player_velocity.0.y = 0.0;
+    } else {
+        player_velocity.0.y += GRAVITY * dt;
     }
+
+    // jump
+    if keyboard.just_pressed(KeyCode::Space) && grounded {
+        player_velocity.0.y = JUMP_VELOCITY;
+    }
+
+    let delta = player_velocity.0 * dt;
+
+    // Y方向(重量九・ジャンプ)の衝突解決
+    let vertical_delta = Vec3::new(0.0, delta.y, 0.0);
+    let vertical_dir = if delta.y >= 0.0 { Dir3::Y } else { Dir3::NEG_Y };
+    let hit_y = spatial_query.cast_shape(
+        &Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
+        transform.translation,
+        Quat::IDENTITY,
+        vertical_dir,
+        &ShapeCastConfig::from_max_distance(delta.y.abs()),
+        &SpatialQueryFilter::from_excluded_entities(vec![entity]),
+    );
+    let vertical_move = if let Some(hit) = hit_y {
+        player_velocity.0.y = 0.0;
+        vertical_dir.as_vec3() * (hit.distance - 0.01).max(0.0)
+    } else {
+        vertical_delta
+    };
+
+    // X/Z方向 (水平移動) の衝突解決
+    let horizontal_delta = Vec3::new(delta.x, 0.0, delta.z);
+    let horizontal_move = if horizontal_delta.length_squared() > 0.0 {
+        match Dir3::new(horizontal_delta){
+            Ok(horizontal_dir) =>{
+                let hit_xz = spatial_query.cast_shape(
+                    &Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
+                    transform.translation,
+                    Quat::IDENTITY,
+                    horizontal_dir,
+                    &ShapeCastConfig::from_max_distance(horizontal_delta.length()),
+                    &SpatialQueryFilter::from_excluded_entities(vec![entity]),
+                );
+                if let Some(hit) = hit_xz {
+                    horizontal_dir.as_vec3() * (hit.distance - 0.01).max(0.0)
+                } else {
+                    horizontal_delta
+                }
+            }
+            Err(_) => Vec3::ZERO,
+        }
+    } else {
+        Vec3::ZERO
+    };
+
+    transform.translation += vertical_move + horizontal_move;
+
 }
 
 pub fn update_animation(
@@ -293,27 +354,27 @@ pub fn update_player_model_offset(
 
 pub fn update_player_collider(
     mut commands: Commands,
-    mut query: Query<(Entity,  &PlayerState),(With<Player>, Changed<PlayerState>)>,
+    mut query: Query<(Entity,  &PlayerState, &mut Position),(With<Player>, Changed<PlayerState>)>,
+    mut was_crouching: Local<bool>,
 ) {
-    let Ok((entity, state)) = query.single_mut() else {
+    let Ok((entity, state, mut position)) = query.single_mut() else {
         return;
     };
     
-  println!("state changed: {:?}", state);
+    println!("state changed: {:?}", state);
 
-    match *state {
-        PlayerState::CrouchIdle | PlayerState::CrouchWalking => {
-            commands.entity(entity).insert((
-                Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT),
-                ColliderTransform::from(Transform::from_xyz(0.0, -PLAYER_CROUCH_OFFSET_Y, 0.0)),
-            ));
-            
-        }
-        _ => {
-            commands.entity(entity).insert((
-                Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
-                ColliderTransform::default(),
-            ));
-        }
+    let is_crouching = matches!(*state, PlayerState::CrouchIdle | PlayerState::CrouchWalking);
+
+    if is_crouching && ! *was_crouching {
+        // 立ち->しゃがみ：中心を下げる
+        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_CROUCH_HEIGHT));
+        position.y -= (PLAYER_HEIGHT - PLAYER_CROUCH_HEIGHT) / 2.0;
+    } else if !is_crouching && *was_crouching {
+        // しゃがみ->立ち：中心を上げる
+        commands.entity(entity).insert(Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT));
+        position.y += (PLAYER_HEIGHT - PLAYER_CROUCH_HEIGHT) / 2.0;
     }
+
+    *was_crouching = is_crouching;
+
 }
