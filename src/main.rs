@@ -23,7 +23,6 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(PhysicsPlugins::default())
-        .add_plugins(PhysicsDebugPlugin::default())
         .init_resource::<PlayerVelocity>()
         .add_systems(
             Startup,
