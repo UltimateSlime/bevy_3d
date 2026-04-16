@@ -1,6 +1,6 @@
 # Bevy 3D character controller with animation (Rust)
 
-3D open-world game in Rust + Bevy 0.18 (WIP)
+3D character controller for Bevy 0.18 + avian3d 0.5 featuring kinematic rigidbody, jump, crouch, dash, wall sliding, and Mixamo animations.
 
 ![demo](docs/images/demo.gif)
 
@@ -10,6 +10,8 @@
 |---|---|
 | WASD | Move (aligned to camera direction) |
 | Space | Jump (ground detection via shape cast) |
+| Shift | Dash |
+| Ctrl | Crouch (hold) |
 | Mouse | Rotate camera |
 | Scroll | Zoom in/out (TPS only) |
 | V | Toggle TPS / FPS camera |
@@ -27,15 +29,14 @@
 
 ### Player
 - Capsule collider with 3D character model (GLB from Mixamo)
-- `RigidBody::Dynamic` + `LockedAxes::ROTATION_LOCKED`
-- Ground detection via shape cast for jump control
+- `RigidBody::Kinematic` with custom character controller
+  - Custom gravity, ground detection, and collision resolution
+  - Move-and-slide: wall sliding using normal projection
+- Ground detection via shape cast
 - Player rotates towards movement direction
-- `PlayerState` component for state management (Idle / Walking / Jumping)
-- Animations: Idle / Walk / Jump
-
-## Known Issues
-- Animation desync when hitting walls
-- Jump animation needs improvement
+- `PlayerState` component for state management (Idle / Walking / Running / Jumping / CrouchIdle / CrouchWalking)
+- Crouch: collider resize + camera offset + ceiling check (`can_stand`)
+- Animations: Idle / Walk / Run / Jump / CrouchIdle / CrouchWalking
 
 ## File Structure
 
@@ -43,13 +44,13 @@
 src/
 ├── main.rs      # App initialization and plugin registration
 ├── world.rs     # Ground, buildings, lights, skybox
-├── player.rs    # Player, movement, jump, animations, PlayerState
+├── player.rs    # Player, movement, jump, crouch, animations, PlayerState
 └── camera.rs    # Camera modes, rotation, collision, cursor lock
 assets/
 ├── textures/
 │   └── Ryfjallet_cubemap.png
 └── models/
-    └── player.glb  # Merged idle/walk/jump animations (Mixamo)
+    └── player.glb  # Merged animations (Mixamo): Idle/Jump/Walk/CrouchIdle/CrouchWalking/Running
 docs/
 └── images/
     └── demo.gif
@@ -58,4 +59,3 @@ docs/
 ## Dependencies
 - [Bevy 0.18](https://bevyengine.org/)
 - [avian3d 0.5](https://github.com/Jondolf/avian)
-```

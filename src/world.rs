@@ -13,7 +13,7 @@ pub struct SkyboxHandle {
     pub is_loaded: bool,
 }
 
-// 地面・建物・ライトのspawn
+/// Spawn ground, building, lights, and skybox texture handle
 pub fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -26,7 +26,7 @@ pub fn setup(
         is_loaded: false,
     });
 
-    // 太陽光
+    // Sunlight
     commands.spawn((
         DirectionalLight {
             illuminance: WORLD_ILLUMINANCE,
@@ -36,7 +36,7 @@ pub fn setup(
         Transform::from_xyz(4.0, 8.0, 4.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    // 地面
+    // box
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::new(WORLD_HALF_EXTENT, WORLD_HALF_EXTENT)))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
@@ -45,7 +45,7 @@ pub fn setup(
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.0, WORLD_HALF_EXTENT * 2.0),
     ));
 
-    // 箱
+    // Multiple boxes with verying heights and colors: (x, z, height, color)
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
@@ -54,7 +54,7 @@ pub fn setup(
         Collider::cuboid(1.0, 1.0, 1.0),
     ));
 
-    // 箱を複数配置
+
     let positions = [
         (0.0, -2.0, 2.0, Color::srgb(0.8, 0.6, 0.4)), // (x, z, 高さ) ベージュ
         (3.0, -4.0, 1.0, Color::srgb(0.6, 0.6, 0.8)), // 青っぽい
@@ -63,6 +63,7 @@ pub fn setup(
         (-5.0, -5.0, 3.0, Color::srgb(0.5, 0.7, 0.5)), // green
     ];
 
+    // Falling box (dynamic rigidbody)
     for (x, z, height, color) in positions {
         commands.spawn((
             Mesh3d(meshes.add(Cuboid::new(1.0, height, 1.0))),
@@ -73,16 +74,15 @@ pub fn setup(
         ));
     }
 
-    // 落ちる箱
+    // Low ceiling (crouch test area)
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(1.0, 1.0, 1.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.8, 0.3, 0.3))),
-        Transform::from_xyz(2.0, 20.0, -3.0), // 高い位置からスタート
-        RigidBody::Dynamic,                   // 動的な剛体として設定
-        Collider::cuboid(1.0, 1.0, 1.0),      // コライダーを追加
+        Transform::from_xyz(2.0, 20.0, -3.0), 
+        RigidBody::Dynamic,                   
+        Collider::cuboid(1.0, 1.0, 1.0),      
     ));
 
-    // 低い天井 (しゃがみテスト用)
     commands.spawn((
         Mesh3d(meshes.add(Cuboid::new(10.0, 0.5, 10.0))),
         MeshMaterial3d(materials.add(Color::srgb(0.5, 0.5, 0.8))),
@@ -92,7 +92,7 @@ pub fn setup(
     ));
 }
 
-// Skybox非同期ロード
+/// Attach skybox to camera once the cubemap texture finishes loading.
 pub fn asset_loaded(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -105,7 +105,7 @@ pub fn asset_loaded(
     }
     if !asset_server.load_state(&skybox_res.image).is_loaded() {
         return;
-    } // まだロードされていない場合は何もしない
+    } 
 
     let Some(image) = images.get_mut(&skybox_res.image) else { return; };
     if image.texture_descriptor.array_layer_count() == 1 {

@@ -199,11 +199,11 @@ pub fn move_player(
         spatial_query
             .cast_shape(
                 &Collider::cylinder(PLAYER_RADIUS * 0.8, 0.0),
-                transform.translation, // レイの開始点 (プレイヤーの位置)
+                transform.translation, 
                 Quat::IDENTITY,
-                Dir3::NEG_Y, // 下方向
+                Dir3::NEG_Y, 
                 &ShapeCastConfig::from_max_distance(grounded_cast_distance),
-                &SpatialQueryFilter::from_excluded_entities(vec![entity]), // 自分自身を除外
+                &SpatialQueryFilter::from_excluded_entities(vec![entity]), 
             )
             .is_some()
 

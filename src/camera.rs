@@ -61,7 +61,7 @@ impl CameraAngle {
     }
 }
 
-// カメラ
+/// Spawn the camera entity with TPS mode and default angle.
 pub fn spawn_camera(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
@@ -71,6 +71,7 @@ pub fn spawn_camera(mut commands: Commands) {
     ));
 }
 
+/// Handle camera mode toggle (V kye), mouse look, and scroll zoom.
 pub fn update_camera(
     keyboard: Res<ButtonInput<KeyCode>>,
     mouse_motion: Res<AccumulatedMouseMotion>,
@@ -81,7 +82,7 @@ pub fn update_camera(
         return;
     };
 
-    // モード切替
+    // Toggle TPS / FPS
     if keyboard.just_pressed(KeyCode::KeyV) {
         *mode = match *mode {
             CameraMode::TPS => CameraMode::FPS,
@@ -96,6 +97,8 @@ pub fn update_camera(
     angle.add_distance(mouse_scroll.delta.y);
 }
 
+/// Position the camera relative to the player each frame.
+/// TPS: orbit camera with wall collision. FPS: attach to player head.
 pub fn camera_follow(
     player_query: Query<(Entity, &Transform, &PlayerState), With<Player>>,
     mut camera_query: Query<
@@ -123,7 +126,7 @@ pub fn camera_follow(
             let ideal_offset = rotation * Vec3::new(0.0, CAMERA_TPS_HEIGHT + crouch_offset, angle.distance());
             let ideal_pos = player_transform.translation + ideal_offset;
 
-            // プレイヤー位置から理想位置へレイを飛ばす
+            // Raycast from player to ideal camera position to detect walls
             let Ok(direction) = Dir3::new(ideal_offset.normalize()) else { return; };
             let distance = ideal_offset.length();
 
@@ -135,11 +138,11 @@ pub fn camera_follow(
                 &SpatialQueryFilter::from_excluded_entities(vec![player_entity]),
             ) {
                 Some(hit) => {
-                    // なにかにあたったらその少し手前に置く
+                    // Wall hit: place camera slightly in front of the wall
                     player_transform.translation
                         + ideal_offset.normalize() * (hit.distance - CAMERA_WALL_MIN_DISTANCE).max(CAMERA_WALL_CLAMP_MIN)
                 }
-                None => ideal_pos, // なにもなければ理想の位置
+                None => ideal_pos, 
             };
 
             camera_transform.translation = actual_pos;
@@ -153,6 +156,7 @@ pub fn camera_follow(
     }
 }
 
+/// Lock cursor on left click, release on focus loss (e.g. Alt + Tab)
 pub fn handle_focus(
     window: Single<&Window>,
     mouse_button: Res<ButtonInput<MouseButton>>,
