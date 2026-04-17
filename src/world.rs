@@ -47,7 +47,7 @@ pub fn setup(
     // Ground
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::new(Vec3::Y, Vec2::new(WORLD_HALF_EXTENT, WORLD_HALF_EXTENT)))),
-        MeshMaterial3d(materials.add(Color::srgb(0.5, 0.8, 0.5))),
+        MeshMaterial3d(materials.add(Color::srgb(0.3, 0.3, 0.3))),
         Transform::from_xyz(0.0, 0.0, 0.0),
         RigidBody::Static,
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.0, WORLD_HALF_EXTENT * 2.0),
