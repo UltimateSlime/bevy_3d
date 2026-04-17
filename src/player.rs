@@ -97,7 +97,7 @@ pub fn spawn_player(
     // Physics parent (collider + rigid body ) with model as child entity
     commands
         .spawn((
-            Transform::from_xyz(0.0, 10.0, 0.0),
+            Transform::from_xyz(0.0, 50.0, 0.0),
             RigidBody::Kinematic,
             Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
             Player,
