@@ -6,14 +6,31 @@ use rand::Rng;
 
 const WORLD_ILLUMINANCE: f32 = 10000.0;
 const WORLD_BRIGHTNESS: f32 = 1000.0;
-const WORLD_HALF_EXTENT: f32 = 100.0;
+const WORLD_HALF_EXTENT: f32 = 300.0;
 
 const WORLD_BUILDING_SIZE_MIN: f32 = 3.0;
 const WORLD_BUILDING_SIZE_MAX: f32 = 8.0;
 const WORLD_BUILDING_HEIGHT_MIN: f32 = 4.0;
 const WORLD_BUILDING_HEIGHT_MAX: f32 = 16.0;
 const WORLD_ROAD_WIDTH: f32 = 3.0;
-const GRID_COUNT: usize = 15;
+
+pub struct CityConfig {
+    pub grid_count: usize,
+    pub origin: Vec3,
+    pub building_height_max: f32,
+    pub road_width: f32,
+}
+
+impl CityConfig {
+    pub fn new(grid_count: usize, origin: Vec3) -> Self {
+        Self {
+            grid_count,
+            origin,
+            building_height_max: WORLD_BUILDING_HEIGHT_MAX,
+            road_width: WORLD_ROAD_WIDTH,
+        }
+    }
+}
 
 #[derive(Resource)]
 pub struct SkyboxHandle {
@@ -54,35 +71,45 @@ pub fn setup(
     ));
 
     // City grid
-    let grid_total = GRID_COUNT as f32 * (WORLD_BUILDING_SIZE_MAX + WORLD_ROAD_WIDTH);
-    let offset = grid_total / 2.0;
+    let cities = vec![
+        CityConfig::new(15, Vec3::new(0.0, 0.0, 0.0)),
+        CityConfig::new(5, Vec3::new(200.0, 0.0, 0.0)),
+        CityConfig::new(8, Vec3::new(0.0, 0.0, 200.0)),
+    ];
 
-    for x in 0..GRID_COUNT{
-        for z in 0..GRID_COUNT {
-            let mut rng = rand::thread_rng();
+    for city in &cities {
+        let grid_total = city.grid_count as f32 * (WORLD_BUILDING_SIZE_MAX + city.road_width);
+        let offset = grid_total / 2.0;
+        let mut rng = rand::thread_rng();
 
-            let height = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..WORLD_BUILDING_HEIGHT_MAX);
-            let size_x: f32 = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..WORLD_BUILDING_SIZE_MAX);
-            let size_z: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
+        for x in 0..city.grid_count{
+            for z in 0..city.grid_count {
 
-            let colors = [
-                Color::srgb(0.7, 0.7, 0.7),  // グレー
-                Color::srgb(0.8, 0.7, 0.5),  // ベージュ
-                Color::srgb(0.5, 0.6, 0.8),  // 青系
-                Color::srgb(0.6, 0.6, 0.6),  // 濃いグレー
-                Color::srgb(0.8, 0.8, 0.7),  // クリーム
-            ];
-            let color = colors[rng.gen_range(0..colors.len())]; 
-            commands.spawn((
-                Mesh3d(meshes.add(Cuboid::new(size_x,height,size_z))),
-                MeshMaterial3d(materials.add(color)),
-                Transform::from_xyz( x as f32 * (WORLD_BUILDING_SIZE_MAX+ WORLD_ROAD_WIDTH) - offset, height / 2.0, z as f32 * (WORLD_BUILDING_SIZE_MAX + WORLD_ROAD_WIDTH) - offset),
-                RigidBody::Static,
-                Collider::cuboid(size_x, height, size_z),
-            ));
+                let height = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..city.building_height_max);
+                let size_x: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
+                let size_z: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
+
+                let colors = [
+                    Color::srgb(0.7, 0.7, 0.7),  // グレー
+                    Color::srgb(0.8, 0.7, 0.5),  // ベージュ
+                    Color::srgb(0.5, 0.6, 0.8),  // 青系
+                    Color::srgb(0.6, 0.6, 0.6),  // 濃いグレー
+                    Color::srgb(0.8, 0.8, 0.7),  // クリーム
+                ];
+                let color = colors[rng.gen_range(0..colors.len())]; 
+                commands.spawn((
+                    Mesh3d(meshes.add(Cuboid::new(size_x,height,size_z))),
+                    MeshMaterial3d(materials.add(color)),
+                    Transform::from_xyz(
+                        x as f32 * (WORLD_BUILDING_SIZE_MAX+ city.road_width) - offset + city.origin.x,
+                        height / 2.0,
+                        z as f32 * (WORLD_BUILDING_SIZE_MAX + city.road_width) - offset + city.origin.z),
+                    RigidBody::Static,
+                    Collider::cuboid(size_x, height, size_z),
+                ));
+            }
         }
     }
-
 }
 
 /// Attach skybox to camera once the cubemap texture finishes loading.
