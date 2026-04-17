@@ -64,10 +64,19 @@ pub fn setup(
             let height = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..WORLD_BUILDING_HEIGHT_MAX);
             let size_x: f32 = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..WORLD_BUILDING_SIZE_MAX);
             let size_z: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
+
+            let colors = [
+                Color::srgb(0.7, 0.7, 0.7),  // グレー
+                Color::srgb(0.8, 0.7, 0.5),  // ベージュ
+                Color::srgb(0.5, 0.6, 0.8),  // 青系
+                Color::srgb(0.6, 0.6, 0.6),  // 濃いグレー
+                Color::srgb(0.8, 0.8, 0.7),  // クリーム
+            ];
+            let color = colors[rng.gen_range(0..colors.len())]; 
             commands.spawn((
                 Mesh3d(meshes.add(Cuboid::new(size_x,height,size_z))),
-                MeshMaterial3d(materials.add(Color::srgb(0.8, 0.3, 0.3))),
-                Transform::from_xyz( x as f32 * (size_x + WORLD_ROAD_WIDTH) - offset, height / 2.0, z as f32 * (size_z + WORLD_ROAD_WIDTH) - offset),
+                MeshMaterial3d(materials.add(color)),
+                Transform::from_xyz( x as f32 * (WORLD_BUILDING_SIZE_MAX+ WORLD_ROAD_WIDTH) - offset, height / 2.0, z as f32 * (WORLD_BUILDING_SIZE_MAX + WORLD_ROAD_WIDTH) - offset),
                 RigidBody::Static,
                 Collider::cuboid(size_x, height, size_z),
             ));
