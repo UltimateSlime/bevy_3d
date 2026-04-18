@@ -31,6 +31,8 @@ pub struct PlayerAnimations {
     pub crouch_idle: AnimationNodeIndex,
     pub crouch_walking: AnimationNodeIndex,
     pub running: AnimationNodeIndex,
+    pub floating: AnimationNodeIndex,
+    pub flying: AnimationNodeIndex,
     pub graph: Handle<AnimationGraph>,
 }
 
@@ -43,6 +45,7 @@ pub enum PlayerState {
     Jumping,
     CrouchIdle,
     CrouchWalking,
+    Floating,
     Flying,
 }
 
@@ -83,6 +86,16 @@ pub fn spawn_player(
         1.0,
         graph.root,
     );
+    let floating = graph.add_clip(
+        asset_server.load("models/player.glb#Animation6"),
+        1.0,
+        graph.root,
+    );
+    let flying = graph.add_clip(
+        asset_server.load("models/player.glb#Animation7"),
+        1.0,
+        graph.root,
+    );
 
     let graph_handle = graphs.add(graph);
 
@@ -93,6 +106,8 @@ pub fn spawn_player(
         crouch_idle,
         crouch_walking,
         running,
+        floating,
+        flying,
         graph: graph_handle.clone(),
     });
 
@@ -152,14 +167,17 @@ pub fn move_player(
 
     // Toggled Flight mode with F key
     if keyboard.just_pressed(KeyCode::KeyF) {
-        if *state == PlayerState::Flying {
+        if matches! (*state , PlayerState::Floating | PlayerState::Flying ) {
             *state = PlayerState::Idle;
         } else {
-            *state = PlayerState::Flying;
+            *state = PlayerState::Floating;
         }
     }
 
-    if *state == PlayerState::Flying {
+    if matches! (*state, PlayerState::Floating | PlayerState::Flying) {
+        let target_rotation = Quat::from_rotation_y(angle.yaw() + std::f32::consts::PI);
+        transform.rotation = transform.rotation.slerp(target_rotation, 0.2);
+
         let mut fly_direction = Vec3::ZERO;
         if keyboard.pressed(KeyCode::KeyW) { fly_direction.z -= 1.0; }
         if keyboard.pressed(KeyCode::KeyS) { fly_direction.z += 1.0; }
@@ -169,8 +187,10 @@ pub fn move_player(
         if keyboard.pressed(KeyCode::ControlLeft) { fly_direction.y -= 1.0; }
 
         let fly_speed = if keyboard.pressed(KeyCode::ShiftLeft) {
+            *state = PlayerState::Flying;
             PLAYER_FLY_SPEED * 3.0
         } else {
+            *state = PlayerState::Floating;
             PLAYER_FLY_SPEED
         };
 
@@ -436,7 +456,8 @@ pub fn update_animation(
         PlayerState::CrouchIdle => animations.crouch_idle,
         PlayerState::CrouchWalking => animations.crouch_walking,
         PlayerState::Running => animations.running,
-        PlayerState::Flying => animations.idle,
+        PlayerState::Floating => animations.floating,
+        PlayerState::Flying => animations.flying,
     };
 
     if *current_anim != Some(next_anim) {
