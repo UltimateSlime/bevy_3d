@@ -177,7 +177,11 @@ pub fn move_player(
 
         let fly_rotation = Quat::from_rotation_y(angle.yaw()) * Quat::from_rotation_x(angle.pitch());
         let direction = fly_rotation * fly_direction.normalize_or_zero();
-        transform.translation += direction * fly_speed * time.delta_secs();
+        let delta = direction * fly_speed * time.delta_secs();
+
+        let current_pos = transform.translation;
+        let fly_collider = Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT);
+        transform.translation += resolve_collision(&spatial_query, &fly_collider, current_pos, delta, entity);
 
 
         return;
@@ -383,6 +387,36 @@ pub fn move_player(
 
 }
 
+
+/// collision judge
+fn resolve_collision(
+    spatial_query: &SpatialQuery,
+    collider: &Collider,
+    position: Vec3,
+    delta: Vec3,
+    excluded: Entity,
+) -> Vec3 {
+    match Dir3::new(delta) {
+        Ok(dir) => {
+            match spatial_query.cast_shape(
+                collider,
+                position,
+                Quat::IDENTITY,
+                dir,
+                &ShapeCastConfig::from_max_distance(delta.length()),
+                &SpatialQueryFilter::from_excluded_entities(vec![excluded]),
+              )  {
+                Some(hit) => {
+                    let wall_normal = hit.normal1;
+                    let slide = delta - wall_normal * delta.dot(wall_normal);
+                    slide
+                },
+                None => delta,
+            }
+        }
+        Err(_) => delta,
+    }
+}
 
 /// Switch animation clip based on current PlayerState.
 pub fn update_animation(
