@@ -4,7 +4,7 @@ use bevy::input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll};
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions};
 
-const CAMERA_SENSITIVITY: f32 = 0.003;
+const CAMERA_SENSITIVITY: f32 = 0.006;
 const CAMERA_TPS_HEIGHT: f32 = 5.0;
 const CAMERA_INITIAL_DISTANCE: f32 = 5.0;
 const CAMERA_INITIAL_YAW: f32 = std::f32::consts::PI;
@@ -77,6 +77,7 @@ pub fn update_camera(
     mouse_motion: Res<AccumulatedMouseMotion>,
     mouse_scroll: Res<AccumulatedMouseScroll>,
     mut camera_query: Query<(&mut CameraMode, &mut CameraAngle), With<Camera3d>>,
+    player_query: Query<&Transform, With<Player>>,
 ) {
     let Ok((mut mode, mut angle)) = camera_query.single_mut() else {
         return;
@@ -85,8 +86,22 @@ pub fn update_camera(
     // Toggle TPS / FPS
     if keyboard.just_pressed(KeyCode::KeyV) {
         *mode = match *mode {
-            CameraMode::TPS => CameraMode::FPS,
-            CameraMode::FPS => CameraMode::TPS,
+            CameraMode::TPS => {
+                if let Ok(player_transform) = player_query.single() {
+                    let (yaw, _, _) = player_transform.rotation.to_euler(EulerRot::YXZ);
+                    angle.yaw = yaw + std::f32::consts::PI;
+                    angle.pitch = 0.0;
+                }
+                CameraMode::FPS
+            }
+            CameraMode::FPS => {
+                if let Ok(player_transform) = player_query.single() {
+                    let (yaw, _, _) = player_transform.rotation.to_euler(EulerRot::YXZ);
+                    angle.yaw = yaw + std::f32::consts::PI;
+                    angle.pitch = CAMERA_INITIAL_PITCH;
+                }
+                CameraMode::TPS
+            }
         };
     }
 
