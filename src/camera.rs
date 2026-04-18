@@ -11,7 +11,7 @@ const CAMERA_INITIAL_YAW: f32 = std::f32::consts::PI;
 const CAMERA_INITIAL_PITCH: f32 = 0.4;
 const CAMERA_WALL_MIN_DISTANCE: f32 = 0.3;
 const CAMERA_WALL_CLAMP_MIN: f32 = 0.1;
-const CAMERA_PITCH_MIN: f32 = -0.5;
+const CAMERA_PITCH_MIN: f32 = -1.19;
 const CAMERA_PITCH_MAX: f32 = 1.4;
 const CAMERA_DISTANCE_MIN: f32 = 2.0;
 const CAMERA_DISTANCE_MAX: f32 = 100.0;
@@ -165,7 +165,8 @@ pub fn camera_follow(
         }
         CameraMode::FPS => {
             let offset = Vec3::new(0.0, CAMERA_FPS_HEIGHT + crouch_offset, 0.0);
-            camera_transform.translation = player_transform.translation + offset;
+            let forward = rotation * Vec3::new(0.0, 0.0, -0.15);
+            camera_transform.translation = player_transform.translation + offset + forward;
             camera_transform.rotation = rotation;
         }
     }

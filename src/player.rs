@@ -1,4 +1,4 @@
-use crate::camera::CameraAngle;
+use crate::camera::{CameraAngle, CameraMode};
 use avian3d::prelude::*;
 use bevy::prelude::*;
 
@@ -98,6 +98,7 @@ pub fn spawn_player(
     commands
         .spawn((
             Transform::from_xyz(0.0, 10.0, 0.0),
+            Visibility::default(),
             RigidBody::Kinematic,
             Collider::capsule(PLAYER_RADIUS, PLAYER_HEIGHT),
             Player,
@@ -137,13 +138,13 @@ pub fn move_player(
         With<Player>,
     >,
     spatial_query: SpatialQuery,
-    camera_query: Query<&CameraAngle, With<Camera3d>>,
+    camera_query: Query<(&CameraAngle, &CameraMode), With<Camera3d>>,
     time: Res<Time>,
 ) {
     let Ok((entity, mut transform, mut state)) = query.single_mut() else {
         return;
     };
-    let Ok(angle) = camera_query.single() else {
+    let Ok((angle, camera_mode)) = camera_query.single() else {
         return;
     };
 
@@ -179,7 +180,10 @@ pub fn move_player(
     let direction = yaw_rotation * direction.normalize_or_zero();
 
     // Smothly rotate player to face movement direction
-    if direction.length_squared() > 0.01 {
+    if *camera_mode == CameraMode::FPS  {
+        let target_rotation = Quat::from_rotation_y(angle.yaw() + std::f32::consts::PI);
+        transform.rotation = transform.rotation.slerp(target_rotation,0.2)
+    }else if direction.length_squared() > 0.01{
         let target_rotation = Quat::from_rotation_y(direction.x.atan2(direction.z));
         transform.rotation = transform.rotation.slerp(target_rotation, 0.2);
     }
