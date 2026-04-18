@@ -12,6 +12,7 @@ pub const JUMP_VELOCITY: f32 = 8.0;
 pub const CAMERA_FPS_HEIGHT: f32 = 1.6; // Eye height (modeld-dependent)
 pub const CAMERA_CROUCH_OFFSET: f32 = -1.0; // Camera offset when crouching (model-dependent)
 pub const GRAVITY: f32 = -9.8;
+pub const PLAYER_FLY_SPEED: f32 = 20.0;
 
 #[derive(Component)]
 pub struct Player;
@@ -42,6 +43,7 @@ pub enum PlayerState {
     Jumping,
     CrouchIdle,
     CrouchWalking,
+    Flying,
 }
 
 pub fn spawn_player(
@@ -147,6 +149,40 @@ pub fn move_player(
     let Ok((angle, camera_mode)) = camera_query.single() else {
         return;
     };
+
+    // Toggled Flight mode with F key
+    if keyboard.just_pressed(KeyCode::KeyF) {
+        if *state == PlayerState::Flying {
+            *state = PlayerState::Idle;
+        } else {
+            *state = PlayerState::Flying;
+        }
+    }
+
+    if *state == PlayerState::Flying {
+        let mut fly_direction = Vec3::ZERO;
+        if keyboard.pressed(KeyCode::KeyW) { fly_direction.z -= 1.0; }
+        if keyboard.pressed(KeyCode::KeyS) { fly_direction.z += 1.0; }
+        if keyboard.pressed(KeyCode::KeyA) { fly_direction.x -= 1.0; }
+        if keyboard.pressed(KeyCode::KeyD) { fly_direction.x += 1.0; }
+        if keyboard.pressed(KeyCode::Space) { fly_direction.y += 1.0; }
+        if keyboard.pressed(KeyCode::ControlLeft) { fly_direction.y -= 1.0; }
+
+        let fly_speed = if keyboard.pressed(KeyCode::ShiftLeft) {
+            PLAYER_FLY_SPEED * 3.0
+        } else {
+            PLAYER_FLY_SPEED
+        };
+
+
+        let fly_rotation = Quat::from_rotation_y(angle.yaw()) * Quat::from_rotation_x(angle.pitch());
+        let direction = fly_rotation * fly_direction.normalize_or_zero();
+        transform.translation += direction * fly_speed * time.delta_secs();
+
+
+        return;
+    }
+
 
     // Check if there is enough room above to stand up
     let can_stand = spatial_query
@@ -366,6 +402,7 @@ pub fn update_animation(
         PlayerState::CrouchIdle => animations.crouch_idle,
         PlayerState::CrouchWalking => animations.crouch_walking,
         PlayerState::Running => animations.running,
+        PlayerState::Flying => animations.idle,
     };
 
     if *current_anim != Some(next_anim) {
