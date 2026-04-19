@@ -31,6 +31,7 @@ pub struct PlayerAnimations {
     pub idle: AnimationNodeIndex,
     pub walking: AnimationNodeIndex,
     pub jumping: AnimationNodeIndex,
+    pub falling: AnimationNodeIndex,
     pub crouch_idle: AnimationNodeIndex,
     pub crouch_walking: AnimationNodeIndex,
     pub running: AnimationNodeIndex,
@@ -100,6 +101,11 @@ pub fn spawn_player(
         1.0,
         graph.root,
     );
+    let falling= graph.add_clip(
+        asset_server.load("models/player.glb#Animation8"),
+        1.0,
+        graph.root,
+    );
 
     let graph_handle = graphs.add(graph);
 
@@ -107,6 +113,7 @@ pub fn spawn_player(
         idle,
         walking,
         jumping,
+        falling,
         crouch_idle,
         crouch_walking,
         running,
@@ -169,9 +176,9 @@ pub fn move_player(
         return;
     };
 
-    // Toggled Flight mode with F key
     if keyboard.just_pressed(KeyCode::KeyF) {
         if matches! (*state , PlayerState::Floating | PlayerState::Flying ) {
+            // Exit flight: fall naturally (even on ground, Falling resolves to Idel next frame)
             *state = PlayerState::Falling;
             player_velocity.0 = Vec3::ZERO;
         } else {
@@ -347,7 +354,14 @@ pub fn move_player(
     if grounded && player_velocity.0.y < 0.0 {
         player_velocity.0.y = 0.0;
     } else if !just_jumped {
-        player_velocity.0.y += GRAVITY * dt;
+        // Dive: stronger gravity and higher terminal velocity when ShiftLeft is held during Falling
+        let is_diving = matches!( *state, PlayerState::Falling)
+            && keyboard.pressed(KeyCode::ShiftLeft);
+        let gravity_mult = if is_diving { DIVE_GRAVITY_MULT } else { 1.0 };
+        player_velocity.0.y += GRAVITY * gravity_mult * dt;
+
+        let max_fall = if is_diving { FALL_SPEED_DIVE_MAX } else { FALL_SPEED_MAX };
+        player_velocity.0.y = player_velocity.0.y.max(max_fall)
     }
 
     let delta = player_velocity.0 * dt;
@@ -470,7 +484,7 @@ pub fn update_animation(
         PlayerState::Idle => animations.idle,
         PlayerState::Walking => animations.walking,
         PlayerState::Jumping => animations.jumping,
-        PlayerState::Falling => animations.jumping,
+        PlayerState::Falling => animations.falling,
         PlayerState::CrouchIdle => animations.crouch_idle,
         PlayerState::CrouchWalking => animations.crouch_walking,
         PlayerState::Running => animations.running,
@@ -485,9 +499,6 @@ pub fn update_animation(
             PlayerState::Jumping => {
                 // Skip the crouch wind-up frames in the Mixamo jump clip
                 player.play(next_anim).seek_to(19.0 / 30.0);
-            } 
-            PlayerState::Falling => {
-                player.play(next_anim).seek_to (26.0 / 30.0).repeat();
             }
             _ => {
             player.play(next_anim).repeat();
