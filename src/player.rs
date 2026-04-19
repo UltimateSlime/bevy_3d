@@ -1,6 +1,7 @@
 use crate::camera::{CameraAngle, CameraMode};
 use avian3d::prelude::*;
 use bevy::prelude::*;
+use std::time::Duration;
 
 pub const PLAYER_RADIUS: f32 = 0.3;
 pub const PLAYER_HEIGHT: f32 = 1.2; // Total height = HEIGHT + RADIUS *2 
@@ -16,6 +17,7 @@ pub const FALL_SPEED_MAX: f32 = -20.0;
 pub const FALL_SPEED_DIVE_MAX: f32 = -40.0;
 pub const DIVE_GRAVITY_MULT: f32 = 3.0;
 pub const PLAYER_FLY_SPEED: f32 = 20.0;
+pub const ANIM_TRANSITION_MS: u64 = 20;  // Animation crossfade duration
 
 #[derive(Component)]
 pub struct Player;
@@ -147,10 +149,16 @@ pub fn setup_player_animation(
     mut players: Query<(Entity, &mut AnimationPlayer), Added<AnimationPlayer>>,
 ) {
     for (entity, mut player) in &mut players {
+        // Start initial animation through AnimationTransitions for proper management
+        let mut transitions = AnimationTransitions::new();
+        transitions
+            .play(&mut player, animations.idle, Duration::ZERO)
+            .repeat();
+
         commands
             .entity(entity)
-            .insert(AnimationGraphHandle(animations.graph.clone()));
-        player.play(animations.idle).repeat();
+            .insert(AnimationGraphHandle(animations.graph.clone()))
+            .insert(transitions);
     }
 }
 
@@ -467,7 +475,7 @@ fn resolve_collision(
 pub fn update_animation(
     animations: Res<PlayerAnimations>,
     player_query: Query<&PlayerState, With<Player>>,
-    mut anim_players: Query<&mut AnimationPlayer>,
+    mut anim_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     mut current_state: Local<Option<PlayerState>>,
 ) {
     let Ok(state) = player_query.single() else {
@@ -492,22 +500,16 @@ pub fn update_animation(
         PlayerState::Flying => animations.flying,
     };
 
-    for mut player in &mut anim_players {
-        player.stop_all();
+    let transition_duration = Duration::from_millis(ANIM_TRANSITION_MS);
 
-        match *state {
-            PlayerState::Jumping => {
-                // Skip the crouch wind-up frames in the Mixamo jump clip
-                player.play(next_anim).seek_to(19.0 / 30.0);
-            }
-            _ => {
-            player.play(next_anim).repeat();
-            }
-        }  
-    }
+    for (mut player, mut transitions) in &mut anim_players {
+        let active = transitions.play(&mut player, next_anim, transition_duration);
+
+        if *state != PlayerState::Jumping {
+            active.repeat();
+        }
+    }  
 }
-
-
 
 /// Adjust the child model's Y offset to match the current collider height.
 pub fn update_player_model_offset(
