@@ -172,9 +172,11 @@ pub fn move_player(
     // Toggled Flight mode with F key
     if keyboard.just_pressed(KeyCode::KeyF) {
         if matches! (*state , PlayerState::Floating | PlayerState::Flying ) {
-            *state = PlayerState::Idle;
+            *state = PlayerState::Falling;
+            player_velocity.0 = Vec3::ZERO;
         } else {
             *state = PlayerState::Floating;
+            player_velocity.0 = Vec3::ZERO;
         }
     }
 
@@ -283,7 +285,12 @@ pub fn move_player(
     
     // Determine next PlayerState
     let next_state = if !grounded {
-        PlayerState::Jumping
+        // Differentiate ascent vs descent: rising is Jumping, falling is Falling
+        if player_velocity.0.y > 0.0 {
+            PlayerState::Jumping
+        } else {
+            PlayerState::Falling
+        }
     } else if crouching {
         if has_input {
             PlayerState::CrouchWalking
