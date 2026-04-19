@@ -12,6 +12,9 @@ pub const JUMP_VELOCITY: f32 = 8.0;
 pub const CAMERA_FPS_HEIGHT: f32 = 1.6; // Eye height (modeld-dependent)
 pub const CAMERA_CROUCH_OFFSET: f32 = -1.0; // Camera offset when crouching (model-dependent)
 pub const GRAVITY: f32 = -9.8;
+pub const FALL_SPEED_MAX: f32 = -20.0;
+pub const FALL_SPEED_DIVE_MAX: f32 = -40.0;
+pub const DIVE_GRAVITY_MULT: f32 = 3.0;
 pub const PLAYER_FLY_SPEED: f32 = 20.0;
 
 #[derive(Component)]
@@ -36,7 +39,7 @@ pub struct PlayerAnimations {
     pub graph: Handle<AnimationGraph>,
 }
 
-#[derive(Component, PartialEq, Debug, Default)]
+#[derive(Component, PartialEq, Debug, Default, Clone, Copy)]
 pub enum PlayerState {
     #[default]
     Idle,
@@ -443,11 +446,17 @@ pub fn update_animation(
     animations: Res<PlayerAnimations>,
     player_query: Query<&PlayerState, With<Player>>,
     mut anim_players: Query<&mut AnimationPlayer>,
-    mut current_anim: Local<Option<AnimationNodeIndex>>,
+    mut current_state: Local<Option<PlayerState>>,
 ) {
     let Ok(state) = player_query.single() else {
         return;
     };
+
+    // Skip if state hasn't changed
+    if current_state.as_ref() == Some(state) {
+        return;
+    }
+    *current_state = Some(*state);
 
     let next_anim = match state {
         PlayerState::Idle => animations.idle,
@@ -460,20 +469,18 @@ pub fn update_animation(
         PlayerState::Flying => animations.flying,
     };
 
-    if *current_anim != Some(next_anim) {
-        *current_anim = Some(next_anim);
-        for mut player in &mut anim_players {
-            player.stop_all();
+    for mut player in &mut anim_players {
+        player.stop_all();
 
-            if *state == PlayerState::Jumping {
-                // Skip the crouch wind-up frames in the Mixamo jump clip
-                player.play(next_anim).seek_to(19.0 / 30.0);
-            } else {
-                player.play(next_anim).repeat();
-            }
+        if *state == PlayerState::Jumping {
+            // Skip the crouch wind-up frames in the Mixamo jump clip
+            player.play(next_anim).seek_to(19.0 / 30.0);
+        } else {
+            player.play(next_anim).repeat();
         }
     }
 }
+
 
 
 /// Adjust the child model's Y offset to match the current collider height.
