@@ -46,6 +46,7 @@ pub enum PlayerState {
     Walking,
     Running,
     Jumping,
+    Falling,
     CrouchIdle,
     CrouchWalking,
     Floating,
@@ -462,6 +463,7 @@ pub fn update_animation(
         PlayerState::Idle => animations.idle,
         PlayerState::Walking => animations.walking,
         PlayerState::Jumping => animations.jumping,
+        PlayerState::Falling => animations.jumping,
         PlayerState::CrouchIdle => animations.crouch_idle,
         PlayerState::CrouchWalking => animations.crouch_walking,
         PlayerState::Running => animations.running,
@@ -472,12 +474,18 @@ pub fn update_animation(
     for mut player in &mut anim_players {
         player.stop_all();
 
-        if *state == PlayerState::Jumping {
-            // Skip the crouch wind-up frames in the Mixamo jump clip
-            player.play(next_anim).seek_to(19.0 / 30.0);
-        } else {
+        match *state {
+            PlayerState::Jumping => {
+                // Skip the crouch wind-up frames in the Mixamo jump clip
+                player.play(next_anim).seek_to(19.0 / 30.0);
+            } 
+            PlayerState::Falling => {
+                player.play(next_anim).seek_to (26.0 / 30.0).repeat();
+            }
+            _ => {
             player.play(next_anim).repeat();
-        }
+            }
+        }  
     }
 }
 
