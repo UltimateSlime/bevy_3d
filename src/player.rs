@@ -441,7 +441,9 @@ pub fn move_player(
 }
 
 
-/// collision judge
+/// Flying movement collision resolution.
+/// NOTE: Ground movement uses a separate vertical/horizontal split in move_player
+/// because Y-axis requires velocity zeroing on impact.
 fn resolve_collision(
     spatial_query: &SpatialQuery,
     collider: &Collider,
@@ -460,9 +462,14 @@ fn resolve_collision(
                 &SpatialQueryFilter::from_excluded_entities(vec![excluded]),
               )  {
                 Some(hit) => {
+                    let safe_distance = (hit.distance - 0.01).max(0.0);
+                    let to_wall = dir.as_vec3() * safe_distance;
+
+                    let remaining = delta - to_wall;
                     let wall_normal = hit.normal1;
-                    let slide = delta - wall_normal * delta.dot(wall_normal);
-                    slide
+                    let slide = remaining - wall_normal * delta.dot(wall_normal);
+                    
+                    to_wall * slide
                 },
                 None => delta,
             }
