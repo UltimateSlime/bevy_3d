@@ -1,4 +1,3 @@
-````markdown
 # Bevy 3D character controller with animation (Rust)
 
 3D character controller for Bevy 0.18 + avian3d 0.5 featuring kinematic rigidbody, jump, crouch, dash, wall sliding, flight, and Mixamo animations.
@@ -65,4 +64,3 @@ docs/
 ## Dependencies
 - [Bevy 0.18](https://bevyengine.org/)
 - [avian3d 0.5](https://github.com/Jondolf/avian)
-```
