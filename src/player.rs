@@ -22,6 +22,7 @@ pub const ANIM_TRANSITION_MS: u64 = 20;  // Animation crossfade duration
 // Double-tap Space to enter Floating state instaead of sing the F key.
 // Window must be long enough to cover the jump apex (~0.8s at JUMP_VELOCITY = 0.8)
 pub const DOUBLE_JUMP_WINDOW_SECS: f32 = 1.0;
+pub const FLIGHT_EXIT_WINDOW_SECS: f32 = 1.0;
 
 #[derive(Component)]
 pub struct Player;
@@ -181,6 +182,7 @@ pub fn move_player(
     camera_query: Query<(&CameraAngle, &CameraMode), With<Camera3d>>,
     time: Res<Time>,
     mut jump_timer: Local<f32>,
+    mut flight_exit_timer: Local<f32>,
 ) {
     let Ok((entity, mut transform, mut state)) = query.single_mut() else {
         return;
@@ -219,6 +221,19 @@ pub fn move_player(
             *state = PlayerState::Floating;
             PLAYER_FLY_SPEED
         };
+
+        if keyboard.just_pressed(KeyCode::ControlLeft) {
+            if *flight_exit_timer > 0.0 {
+                // Double Ctrl: exit flight
+                *state = PlayerState::Falling;
+                player_velocity.0 = Vec3::ZERO;
+                *flight_exit_timer = 0.0;
+            } else {
+                *flight_exit_timer = FLIGHT_EXIT_WINDOW_SECS;
+            }
+        } else {
+            *flight_exit_timer = (*flight_exit_timer - time.delta_secs()).max(0.0);
+        }
 
 
         let fly_rotation = Quat::from_rotation_y(angle.yaw()) * Quat::from_rotation_x(angle.pitch());
@@ -482,7 +497,7 @@ fn resolve_collision(
                     let wall_normal = hit.normal1;
                     let slide = remaining - wall_normal * delta.dot(wall_normal);
                     
-                    to_wall * slide
+                    to_wall + slide
                 },
                 None => delta,
             }
