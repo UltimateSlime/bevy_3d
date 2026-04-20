@@ -19,6 +19,10 @@ pub const DIVE_GRAVITY_MULT: f32 = 3.0;
 pub const PLAYER_FLY_SPEED: f32 = 20.0;
 pub const ANIM_TRANSITION_MS: u64 = 20;  // Animation crossfade duration
 
+// Double-tap Space to enter Floating state instaead of sing the F key.
+// Window must be long enough to cover the jump apex (~0.8s at JUMP_VELOCITY = 0.8)
+pub const DOUBLE_JUMP_WINDOW_SECS: f32 = 1.0;
+
 #[derive(Component)]
 pub struct Player;
 
@@ -176,6 +180,7 @@ pub fn move_player(
     spatial_query: SpatialQuery,
     camera_query: Query<(&CameraAngle, &CameraMode), With<Camera3d>>,
     time: Res<Time>,
+    mut jump_timer: Local<f32>,
 ) {
     let Ok((entity, mut transform, mut state)) = query.single_mut() else {
         return;
@@ -356,6 +361,14 @@ pub fn move_player(
 
     if just_jumped {
         player_velocity.0.y = JUMP_VELOCITY;
+        *jump_timer = DOUBLE_JUMP_WINDOW_SECS;  // Timer Start
+    } else if keyboard.just_pressed(KeyCode::Space) && !grounded && *jump_timer > 0.0 {
+        // Double-jump: enter Floating
+        *state = PlayerState::Floating;
+        player_velocity.0 = Vec3::ZERO;
+        *jump_timer = 0.0;
+    } else {
+        *jump_timer = ( *jump_timer - time.delta_secs()).max(0.0)
     }
 
     // Gravity (skip on the frame we jump to preserve initial velocity)
