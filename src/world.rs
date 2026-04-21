@@ -2,35 +2,11 @@ use avian3d::prelude::*;
 use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
-use rand::Rng;
 
 const WORLD_ILLUMINANCE: f32 = 10000.0;
 const WORLD_BRIGHTNESS: f32 = 1000.0;
 const WORLD_HALF_EXTENT: f32 = 300.0;
 
-const WORLD_BUILDING_SIZE_MIN: f32 = 3.0;
-const WORLD_BUILDING_SIZE_MAX: f32 = 8.0;
-const WORLD_BUILDING_HEIGHT_MIN: f32 = 4.0;
-const WORLD_BUILDING_HEIGHT_MAX: f32 = 16.0;
-const WORLD_ROAD_WIDTH: f32 = 3.0;
-
-pub struct CityConfig {
-    pub grid_count: usize,
-    pub origin: Vec3,
-    pub building_height_max: f32,
-    pub road_width: f32,
-}
-
-impl CityConfig {
-    pub fn new(grid_count: usize, origin: Vec3) -> Self {
-        Self {
-            grid_count,
-            origin,
-            building_height_max: WORLD_BUILDING_HEIGHT_MAX,
-            road_width: WORLD_ROAD_WIDTH,
-        }
-    }
-}
 
 #[derive(Resource)]
 pub struct SkyboxHandle {
@@ -70,46 +46,43 @@ pub fn setup(
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.1, WORLD_HALF_EXTENT * 2.0),
     ));
 
-    // City grid
-    let cities = vec![
-        CityConfig::new(15, Vec3::new(0.0, 0.0, 0.0)),
-        CityConfig::new(5, Vec3::new(200.0, 0.0, 0.0)),
-        CityConfig::new(8, Vec3::new(0.0, 0.0, 200.0)),
-    ];
 
-    for city in &cities {
-        let grid_total = city.grid_count as f32 * (WORLD_BUILDING_SIZE_MAX + city.road_width);
-        let offset = grid_total / 2.0;
-        let mut rng = rand::thread_rng();
 
-        for x in 0..city.grid_count{
-            for z in 0..city.grid_count {
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(0.0,0.0,5.0),
+    ));
 
-                let height = rng.gen_range(WORLD_BUILDING_HEIGHT_MIN..city.building_height_max);
-                let size_x: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
-                let size_z: f32 = rng.gen_range(WORLD_BUILDING_SIZE_MIN..WORLD_BUILDING_SIZE_MAX);
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(2.0,0.0, 5.0),
+    ));
 
-                let colors = [
-                    Color::srgb(0.7, 0.7, 0.7),  // グレー
-                    Color::srgb(0.8, 0.7, 0.5),  // ベージュ
-                    Color::srgb(0.5, 0.6, 0.8),  // 青系
-                    Color::srgb(0.6, 0.6, 0.6),  // 濃いグレー
-                    Color::srgb(0.8, 0.8, 0.7),  // クリーム
-                ];
-                let color = colors[rng.gen_range(0..colors.len())]; 
-                commands.spawn((
-                    Mesh3d(meshes.add(Cuboid::new(size_x,height,size_z))),
-                    MeshMaterial3d(materials.add(color)),
-                    Transform::from_xyz(
-                        x as f32 * (WORLD_BUILDING_SIZE_MAX+ city.road_width) - offset + city.origin.x,
-                        height / 2.0,
-                        z as f32 * (WORLD_BUILDING_SIZE_MAX + city.road_width) - offset + city.origin.z),
-                    RigidBody::Static,
-                    Collider::cuboid(size_x, height, size_z),
-                ));
-            }
-        }
-    }
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(-2.0,0.0, 5.0),
+    ));
+
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(2.0,3.1, 5.0),
+    ));
+
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(0.0,3.1, 5.0),
+    ));
+
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+        Transform::from_xyz(-2.0,3.1, 5.0),
+    ));
+
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_4x4.gltf#Scene0")),
+        Transform::from_xyz(0.0, 3.1 * 2.0, 3.0) // 2階分の高さの上
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+    ));
 }
 
 /// Attach skybox to camera once the cubemap texture finishes loading.
@@ -145,4 +118,37 @@ pub fn asset_loaded(
         });
     }
     skybox_res.is_loaded = true;
+
+}
+
+/// Draw debug grid and axes (dev only)
+pub fn draw_debug_gizmos(mut gizmos: Gizmos) {
+    // XZ Plane (gound) - white
+    gizmos.grid(
+        Isometry3d::from_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
+        UVec2::new(20, 20),
+        Vec2::splat(2.0),
+        Color::srgba(1.0, 1.0, 1.0, 0.3),
+    );
+
+    // XY Plane 
+    gizmos.grid(
+        Isometry3d::IDENTITY,
+        UVec2::new(20, 20),
+        Vec2::splat(2.0),
+        Color::srgba(0.0, 0.5, 1.0, 0.2),
+    );
+    
+    // YZ Plane
+    gizmos.grid(
+        Isometry3d::from_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+        UVec2::new(20, 20),
+        Vec2::splat(2.0),
+        Color::srgba(0.0, 1.0, 0.5, 0.2),
+    );
+
+    // Axis
+    gizmos.arrow(Vec3::ZERO, Vec3::new(10.0, 0.0, 0.0), Color::srgb(1.0, 0.0, 0.0));
+    gizmos.arrow(Vec3::ZERO, Vec3::new(0.0, 10.0, 0.0), Color::srgb(0.0, 1.0, 0.0));
+    gizmos.arrow(Vec3::ZERO, Vec3::new(0.0, 0.0, 10.0), Color::srgb(0.0, 0.0, 1.0));
 }

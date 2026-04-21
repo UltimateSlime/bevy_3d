@@ -2,6 +2,7 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy::window::{CursorGrabMode, CursorOptions};
 use crate::player::PlayerVelocity;
+use crate::world::draw_debug_gizmos;
 
 mod camera;
 mod player;
@@ -47,5 +48,6 @@ fn main() {
         )
         .add_systems(Update, camera::handle_focus)
         .add_systems(Update, close_on_esc)
+        .add_systems( Update, draw_debug_gizmos)
         .run();
 }
