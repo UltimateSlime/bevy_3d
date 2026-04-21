@@ -2,11 +2,18 @@ use avian3d::prelude::*;
 use bevy::core_pipeline::Skybox;
 use bevy::prelude::*;
 use bevy::render::render_resource::{TextureViewDescriptor, TextureViewDimension};
+use rand::Rng;
 
 const WORLD_ILLUMINANCE: f32 = 10000.0;
 const WORLD_BRIGHTNESS: f32 = 1000.0;
 const WORLD_HALF_EXTENT: f32 = 300.0;
 
+const WALL_WIDTH: f32 = 2.0;
+const WALL_HEIGHT: f32 = 3.1;
+const BUILDING_WIDTH_MIN: usize = 2;
+const BUILDING_WIDTH_MAX: usize = 6;
+const BUILDING_FLOORS_MIN: usize = 1;
+const BUILDING_FLOORS_MAX: usize = 5;
 
 #[derive(Resource)]
 pub struct SkyboxHandle {
@@ -46,43 +53,12 @@ pub fn setup(
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.1, WORLD_HALF_EXTENT * 2.0),
     ));
 
+    // Test: Building
+    let mut rng = rand::thread_rng();
+    let width = rng.gen_range(BUILDING_WIDTH_MIN..= BUILDING_WIDTH_MAX);
+    let floors = rng.gen_range(BUILDING_FLOORS_MIN..= BUILDING_FLOORS_MAX);
+    spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), width, floors);
 
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(0.0,0.0,5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(2.0,0.0, 5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(-2.0,0.0, 5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(2.0,3.1, 5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(0.0,3.1, 5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-        Transform::from_xyz(-2.0,3.1, 5.0),
-    ));
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_4x4.gltf#Scene0")),
-        Transform::from_xyz(0.0, 3.1 * 2.0, 3.0) // 2階分の高さの上
-            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
-    ));
 }
 
 /// Attach skybox to camera once the cubemap texture finishes loading.
@@ -151,4 +127,33 @@ pub fn draw_debug_gizmos(mut gizmos: Gizmos) {
     gizmos.arrow(Vec3::ZERO, Vec3::new(10.0, 0.0, 0.0), Color::srgb(1.0, 0.0, 0.0));
     gizmos.arrow(Vec3::ZERO, Vec3::new(0.0, 10.0, 0.0), Color::srgb(0.0, 1.0, 0.0));
     gizmos.arrow(Vec3::ZERO, Vec3::new(0.0, 0.0, 10.0), Color::srgb(0.0, 0.0, 1.0));
+}
+
+fn spawn_building(
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+    origin: Vec3,
+    width_count: usize,
+    floor_count: usize,
+) {
+    for floor in 0..floor_count {
+        for col in 0..width_count {
+            commands.spawn((
+                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+                Transform::from_xyz(
+                    origin.x + col as f32 * WALL_WIDTH,
+                    origin.y + floor as f32 * WALL_HEIGHT,
+                    origin.z,
+                ),
+            ));
+        }
+    }
+
+    let roof_x = origin.x + (width_count as f32 * WALL_WIDTH / 2.0 ) - WALL_WIDTH;
+    let roof_y = origin.y + floor_count as f32 * WALL_HEIGHT;
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_4x4.gltf#Scene0")),
+        Transform::from_xyz(roof_x, roof_y, origin.z - 2.0)
+            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+    ));
 }
