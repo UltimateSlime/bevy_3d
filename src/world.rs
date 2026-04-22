@@ -15,6 +15,61 @@ const BUILDING_WIDTH_MAX: usize = 6;
 const BUILDING_FLOORS_MIN: usize = 1;
 const BUILDING_FLOORS_MAX: usize = 5;
 
+enum RoofSize {
+    R4x4,
+    R4x6,
+    R4x8,
+    R6x4,
+    R6x6,
+    R6x8,
+    R6x10,
+    R6x12,
+    R6x14,
+    R8x8,
+    R8x10,
+    R8x12,
+    R8x14,
+}
+
+impl RoofSize {
+    /// Returns (width_walls, depth_walls) based on roof name (X/2 x Y/2 walls)
+    fn wall_counts(&self) -> (usize, usize) {
+        match self {
+            Self::R4x4 => (2, 2),
+            Self::R4x6 => (2, 3),
+            Self::R4x8 => (2, 4),
+            Self::R6x4 => (3, 2),
+            Self::R6x6 => (3, 3),
+            Self::R6x8 => (3, 4),
+            Self::R6x10 => (3, 5),
+            Self::R6x12 => (3, 6),
+            Self::R6x14 => (3, 7),
+            Self::R8x8 => (4, 4),
+            Self::R8x10 => (4, 5),
+            Self::R8x12 => (4, 6),
+            Self::R8x14 => (4, 7),
+        }
+    }
+
+    fn asset_path(&self) -> &'static str {
+        match self {
+            Self::R4x4 => "medieval/Roof_RoundTiles_4x4.gltf#Scene0",
+            Self::R4x6 => "medieval/Roof_RoundTiles_4x6.gltf#Scene0",
+            Self::R4x8 => "medieval/Roof_RoundTiles_4x8.gltf#Scene0",
+            Self::R6x4 => "medieval/Roof_RoundTiles_6x4.gltf#Scene0",
+            Self::R6x6 => "medieval/Roof_RoundTiles_6x6.gltf#Scene0",
+            Self::R6x8 => "medieval/Roof_RoundTiles_6x8.gltf#Scene0",
+            Self::R6x10 => "medieval/Roof_RoundTiles_6x10.gltf#Scene0",
+            Self::R6x12 => "medieval/Roof_RoundTiles_6x12.gltf#Scene0",
+            Self::R6x14 => "medieval/Roof_RoundTiles_6x14.gltf#Scene0",
+            Self::R8x8 => "medieval/Roof_RoundTiles_8x8.gltf#Scene0",
+            Self::R8x10 => "medieval/Roof_RoundTiles_8x10.gltf#Scene0",
+            Self::R8x12 => "medieval/Roof_RoundTiles_8x12.gltf#Scene0",
+            Self::R8x14 => "medieval/Roof_RoundTiles_8x14.gltf#Scene0",            
+        }
+    }
+}
+
 #[derive(Resource)]
 pub struct SkyboxHandle {
     pub image: Handle<Image>,
@@ -55,12 +110,7 @@ pub fn setup(
 
 
     // Test
-    //spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), 2, 1);
-
-    commands.spawn((
-        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_6x10.gltf#Scene0")),
-        Transform::from_xyz(0.0, 10.0, 5.0)
-    ));
+    spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), RoofSize::R4x4, 1);
 
 }
 
@@ -136,41 +186,53 @@ fn spawn_building(
     commands: &mut Commands,
     asset_server: &AssetServer,
     origin: Vec3,
-    width_count: usize,
-    depth_count: usize,
+    roof: RoofSize,
     floor_count: usize,
 ) {
+    let (width_count, depth_count) = roof.wall_counts();
+
     for floor in 0..floor_count {
         let y = origin.y + floor as f32 * WALL_HEIGHT;
+
         for col in 0..width_count {
             let x = origin.x + col as f32 * WALL_WIDTH;
-            // Front
+
             commands.spawn((
                 SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz( x, y, origin.z),
+                Transform::from_xyz( x + 1.0, y, origin.z -1.0 + 0.2),  // 0.2 is Width of Wall
             ));
 
-            // Rear
             commands.spawn((
                 SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz(x, y, origin.z -depth_count as f32 * WALL_WIDTH),
+                Transform::from_xyz( x + 1.0, y, origin.z - depth_count as f32 * WALL_WIDTH - 0.8),  // 0.2 is (Width of wall x 2)
+            ));
+        }
+
+        for row in 0..depth_count {
+            let z = origin.z - row as f32 * WALL_WIDTH;
+            // 左面
+            commands.spawn((
+                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+                Transform::from_xyz(origin.x + 0.2, y, z - 2.0)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+            ));
+            // 右面
+            commands.spawn((
+                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+                Transform::from_xyz(origin.x + width_count as f32 * WALL_WIDTH , y, z - 2.0 )
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
             ));
         }
     }
 
-    // Select roof size based on fuilding width
-    let roof_path =  if width_count <= 2 {
-        ("medieval/Roof_RoundTiles_4x4.gltf#Scene0")
-    } else {
-        ("medieval/Roof_RoundTiles_6x6.gltf#Scene0")
-    };
-
-    let roof_x = origin.x + (width_count as f32 * WALL_WIDTH) / 2.0 - WALL_WIDTH / 2.0;
+    // 屋根（中心配置）
+    let roof_x = origin.x + 2.0; ///+ width_count as f32 * WALL_WIDTH;
     let roof_y = origin.y + floor_count as f32 * WALL_HEIGHT;
+    let roof_z = origin.z - 3.0; ///- depth_count as f32 * WALL_WIDTH;
 
     commands.spawn((
-        SceneRoot(asset_server.load( roof_path)),
-        Transform::from_xyz(roof_x, roof_y, origin.z)
-            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
-    ));
+        SceneRoot(asset_server.load(roof.asset_path())),
+        Transform::from_xyz(roof_x, roof_y, roof_z),
+//            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+    ));    
 }
