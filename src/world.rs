@@ -53,11 +53,14 @@ pub fn setup(
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.1, WORLD_HALF_EXTENT * 2.0),
     ));
 
-    // Test: Building
-    let mut rng = rand::thread_rng();
-    let width = rng.gen_range(BUILDING_WIDTH_MIN..= BUILDING_WIDTH_MAX);
-    let floors = rng.gen_range(BUILDING_FLOORS_MIN..= BUILDING_FLOORS_MAX);
-    spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), width, floors);
+
+    // Test
+    //spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), 2, 1);
+
+    commands.spawn((
+        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_6x10.gltf#Scene0")),
+        Transform::from_xyz(0.0, 10.0, 5.0)
+    ));
 
 }
 
@@ -134,26 +137,40 @@ fn spawn_building(
     asset_server: &AssetServer,
     origin: Vec3,
     width_count: usize,
+    depth_count: usize,
     floor_count: usize,
 ) {
     for floor in 0..floor_count {
+        let y = origin.y + floor as f32 * WALL_HEIGHT;
         for col in 0..width_count {
+            let x = origin.x + col as f32 * WALL_WIDTH;
+            // Front
             commands.spawn((
                 SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz(
-                    origin.x + col as f32 * WALL_WIDTH,
-                    origin.y + floor as f32 * WALL_HEIGHT,
-                    origin.z,
-                ),
+                Transform::from_xyz( x, y, origin.z),
+            ));
+
+            // Rear
+            commands.spawn((
+                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
+                Transform::from_xyz(x, y, origin.z -depth_count as f32 * WALL_WIDTH),
             ));
         }
     }
 
-    let roof_x = origin.x + (width_count as f32 * WALL_WIDTH / 2.0 ) - WALL_WIDTH;
+    // Select roof size based on fuilding width
+    let roof_path =  if width_count <= 2 {
+        ("medieval/Roof_RoundTiles_4x4.gltf#Scene0")
+    } else {
+        ("medieval/Roof_RoundTiles_6x6.gltf#Scene0")
+    };
+
+    let roof_x = origin.x + (width_count as f32 * WALL_WIDTH) / 2.0 - WALL_WIDTH / 2.0;
     let roof_y = origin.y + floor_count as f32 * WALL_HEIGHT;
+
     commands.spawn((
-        SceneRoot(asset_server.load("medieval/Roof_RoundTiles_4x4.gltf#Scene0")),
-        Transform::from_xyz(roof_x, roof_y, origin.z - 2.0)
+        SceneRoot(asset_server.load( roof_path)),
+        Transform::from_xyz(roof_x, roof_y, origin.z)
             .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
     ));
 }
