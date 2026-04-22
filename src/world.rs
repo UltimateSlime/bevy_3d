@@ -15,6 +15,10 @@ const BUILDING_WIDTH_MAX: usize = 6;
 const BUILDING_FLOORS_MIN: usize = 1;
 const BUILDING_FLOORS_MAX: usize = 5;
 
+// Wall geometry (mesured from gltf bounding box)
+// Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
+const WALL_SIZE: Vec3 = Vec3::new(2.00, 3.12, 0.41);
+
 enum RoofSize {
     R4x4,
     R4x6,
@@ -191,48 +195,56 @@ fn spawn_building(
 ) {
     let (width_count, depth_count) = roof.wall_counts();
 
+    // Building footprint dimensions
+    let total_width = width_count as f32 * WALL_SIZE.x;
+    let total_depth = depth_count as f32 * WALL_SIZE.x;
+
+    // Cneter of the building footprint (used as the anchor for the roof)
+    let center_x = origin.x + total_width / 2.0;
+    let center_z = origin.z - total_depth / 2.0;
+
+    let wall_asset = "medieval/Wall_Plaster_Straight.gltf#Scene0";
+
     for floor in 0..floor_count {
         let y = origin.y + floor as f32 * WALL_HEIGHT;
 
         for col in 0..width_count {
-            let x = origin.x + col as f32 * WALL_WIDTH;
+            let x = origin.x + (col as f32 + 0.5) * WALL_WIDTH;
 
             commands.spawn((
-                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz( x + 1.0, y, origin.z -1.0 + 0.2),  // 0.2 is Width of Wall
+                SceneRoot(asset_server.load(wall_asset)),
+                Transform::from_xyz( x , y, origin.z),  
             ));
 
             commands.spawn((
-                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz( x + 1.0, y, origin.z - depth_count as f32 * WALL_WIDTH - 0.8),  // 0.2 is (Width of wall x 2)
+                SceneRoot(asset_server.load(wall_asset)),
+                Transform::from_xyz( x , y, origin.z - total_depth)
+                    .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
             ));
         }
 
         for row in 0..depth_count {
-            let z = origin.z - row as f32 * WALL_WIDTH;
-            // 左面
+            let z = origin.z - (row as f32 + 0.5)* WALL_SIZE.x;
+            // Left wall at origin.X
             commands.spawn((
-                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz(origin.x + 0.2, y, z - 2.0)
-                    .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
+                SceneRoot(asset_server.load(wall_asset)),
+                Transform::from_xyz(origin.x, y, z)
+                    .with_rotation(Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2)),
             ));
-            // 右面
+            // Right wall at origin.x + total_width
             commands.spawn((
-                SceneRoot(asset_server.load("medieval/Wall_Plaster_Straight.gltf#Scene0")),
-                Transform::from_xyz(origin.x + width_count as f32 * WALL_WIDTH , y, z - 2.0 )
+                SceneRoot(asset_server.load(wall_asset)),
+                Transform::from_xyz(origin.x + total_width , y, z )
                     .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
             ));
         }
     }
 
-    // 屋根（中心配置）
-    let roof_x = origin.x + 2.0; ///+ width_count as f32 * WALL_WIDTH;
-    let roof_y = origin.y + floor_count as f32 * WALL_HEIGHT;
-    let roof_z = origin.z - 3.0; ///- depth_count as f32 * WALL_WIDTH;
-
+    // Roof: pivot is at the geometric center, so just place at building center
+    let roof_y = origin.y + floor_count as f32 * WALL_SIZE.y;
     commands.spawn((
         SceneRoot(asset_server.load(roof.asset_path())),
-        Transform::from_xyz(roof_x, roof_y, roof_z),
+        Transform::from_xyz(center_x, roof_y, center_z),
 //            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
     ));    
 }
