@@ -126,16 +126,42 @@ pub fn setup(
 
     // generate one column of buildings
     let mut rng = rand::thread_rng();
-    let column: Vec<BuildingPlan> = (0..5).map(|_| random_building_plan(&mut rng)).collect();
 
-    let mut current_z = 0.0;
     const ROAD_DEPTH: f32 = 4.0;    // width between house and house in a same column
+    const ROAD_WIDTH: f32 = 6.0;    // 列と列の隙間 (X方向、　馬車も通れる)
+    const COLUMN_COUNT: usize = 3; 
+    const BUILDINGS_PER_COLUMN: usize = 5;
     
-    for plan in &column {
-        let (_w, d) = plan.footprint();
-        let origin = Vec3::new(0.0, 0.0, -current_z);
-        spawn_building(&mut commands, &asset_server, origin, plan.roof, plan.floor_count);
-        current_z += d + ROAD_DEPTH
+    let mut current_x = 0.0;
+
+    for _ in 0..COLUMN_COUNT {
+        // Generate houses in this column
+        let column: Vec<BuildingPlan> = (0..BUILDINGS_PER_COLUMN)
+            .map(|_| random_building_plan(&mut rng))
+            .collect();
+
+        // calculate the max width in thi column ( X direction width = footprint.0)
+        let column_width = column.iter()
+            .map(|p| p.footprint().0)
+            .fold(0.0f32, f32::max);
+
+        // Aline houses in this column
+        let mut current_z = 0.0;
+        for plan in &column {
+            let ( w, d ) = plan.footprint();
+            // 
+            let origin = Vec3::new(
+                current_x + (column_width -w ) / 2.0,
+                0.0,
+                -current_z,
+            );
+            spawn_building(&mut commands, &asset_server, origin, plan.roof, plan.floor_count);
+            current_z += d + ROAD_DEPTH;
+        }
+
+        // to Next Column
+        current_x += column_width + ROAD_WIDTH;
+
     }
 
 }
