@@ -8,8 +8,6 @@ const WORLD_ILLUMINANCE: f32 = 10000.0;
 const WORLD_BRIGHTNESS: f32 = 1000.0;
 const WORLD_HALF_EXTENT: f32 = 300.0;
 
-const WALL_WIDTH: f32 = 2.0;
-const WALL_HEIGHT: f32 = 3.1;
 const BUILDING_WIDTH_MIN: usize = 2;
 const BUILDING_WIDTH_MAX: usize = 6;
 const BUILDING_FLOORS_MIN: usize = 1;
@@ -206,10 +204,10 @@ fn spawn_building(
     let wall_asset = "medieval/Wall_Plaster_Straight.gltf#Scene0";
 
     for floor in 0..floor_count {
-        let y = origin.y + floor as f32 * WALL_HEIGHT;
+        let y = origin.y + floor as f32 * WALL_SIZE.y;
 
         for col in 0..width_count {
-            let x = origin.x + (col as f32 + 0.5) * WALL_WIDTH;
+            let x = origin.x + (col as f32 + 0.5) * WALL_SIZE.x;
 
             commands.spawn((
                 SceneRoot(asset_server.load(wall_asset)),
