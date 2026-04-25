@@ -17,6 +17,7 @@ const BUILDING_FLOORS_MAX: usize = 5;
 // Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
 const WALL_SIZE: Vec3 = Vec3::new(2.00, 3.12, 0.41);
 
+#[derive(Copy, Clone)]
 enum RoofSize {
     R4x4,
     R4x6,
@@ -72,6 +73,19 @@ impl RoofSize {
     }
 }
 
+struct BuildingPlan {
+    roof: RoofSize,
+    floor_count: usize,
+}
+
+impl BuildingPlan {
+    /// Returns (width, depth) of the building footprint in meters.
+    fn footprint(&self) -> (f32, f32) {
+        let (w,d) = self.roof.wall_counts();
+        (w as f32 * WALL_SIZE.x, d as f32 * WALL_SIZE.x)
+    }
+}
+
 #[derive(Resource)]
 pub struct SkyboxHandle {
     pub image: Handle<Image>,
@@ -110,9 +124,19 @@ pub fn setup(
         Collider::cuboid(WORLD_HALF_EXTENT * 2.0, 0.1, WORLD_HALF_EXTENT * 2.0),
     ));
 
+    // generate one column of buildings
+    let mut rng = rand::thread_rng();
+    let column: Vec<BuildingPlan> = (0..5).map(|_| random_building_plan(&mut rng)).collect();
 
-    // Test
-    spawn_building(&mut commands, &asset_server, Vec3::new(0.0, 0.0, 5.0), RoofSize::R4x4, 1);
+    let mut current_z = 0.0;
+    const ROAD_DEPTH: f32 = 4.0;    // width between house and house in a same column
+    
+    for plan in &column {
+        let (_w, d) = plan.footprint();
+        let origin = Vec3::new(0.0, 0.0, -current_z);
+        spawn_building(&mut commands, &asset_server, origin, plan.roof, plan.floor_count);
+        current_z += d + ROAD_DEPTH
+    }
 
 }
 
@@ -245,4 +269,16 @@ fn spawn_building(
         Transform::from_xyz(center_x, roof_y, center_z),
 //            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
     ));    
+}
+
+fn random_building_plan(rng: &mut impl Rng) -> BuildingPlan {
+    use RoofSize::*;
+    let roofs = [
+        R4x4, R4x6, R4x8,
+        R6x4, R6x6, R6x8, R6x10, R6x10, R6x12, R6x14,
+        R8x8, R8x10, R8x12, R8x14,
+    ];
+    let roof = roofs[rng.gen_range(0..roofs.len())];
+    let floor_count = rng.gen_range(BUILDING_FLOORS_MIN..=BUILDING_FLOORS_MAX);
+    BuildingPlan { roof, floor_count }
 }
