@@ -8,18 +8,12 @@ const WORLD_ILLUMINANCE: f32 = 10000.0;
 const WORLD_BRIGHTNESS: f32 = 1000.0;
 const WORLD_HALF_EXTENT: f32 = 300.0;
 
-const BUILDING_WIDTH_MIN: usize = 2;
-const BUILDING_WIDTH_MAX: usize = 6;
 const BUILDING_FLOORS_MIN: usize = 1;
 const BUILDING_FLOORS_MAX: usize = 5;
 
 // Wall geometry (measured from gltf bounding box)
 // Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
 const WALL_SIZE: Vec3 = Vec3::new(2.00, 3.12, 0.41);
-/// Offset from mesh pivot to mesh center.
-/// Y: pivot is at the bottom, so center is WALL_SIZE.y / 2.0 above
-/// Z: pivot is shifted forward (min=-0.31, max=0.09), center is at -0.11
-const WALL_COLLIDER_OFFSET: Vec3 = Vec3::new(0.0, 1.56, -0.11);
 
 #[derive(Copy, Clone)]
 enum RoofSize {
