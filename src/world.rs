@@ -302,8 +302,24 @@ fn spawn_building(
     commands.spawn((
         SceneRoot(asset_server.load(roof.asset_path())),
         Transform::from_xyz(center_x, roof_y, center_z),
-//            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
-    ));    
+    ));
+
+    // Single building-level collider conversing the whole footprint.
+    // Walls are visual-only; this static box prevents the player form
+    // walking through the building.
+    let building_height = floor_count as f32 * WALL_SIZE.y;
+    let building_center = Vec3::new(
+        origin.x + total_width / 2.0,
+        origin.y + building_height / 2.0,
+        origin.z - total_depth / 2.0,
+    );   
+
+    commands.spawn((
+        RigidBody::Static,
+        Collider::cuboid(total_width, building_height, total_depth),
+        Transform::from_translation(building_center),
+    ));
+
 }
 
 
@@ -321,14 +337,6 @@ fn spawn_wall(
         .spawn((
             SceneRoot(asset_server.load(WALL_ASSET)),
             transform,
-//            RigidBody::Static,
-//        ))
-//        .with_children(|parent|{
-//            parent.spawn((
-//                Collider::cuboid(WALL_SIZE.x, WALL_SIZE.y, WALL_SIZE.z),
-//                Transform::from_translation(WALL_COLLIDER_OFFSET),
-//            ));
-//        });
         ));
 }
 
