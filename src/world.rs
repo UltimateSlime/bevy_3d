@@ -251,7 +251,7 @@ fn spawn_building(
     let total_width = width_count as f32 * WALL_SIZE.x;
     let total_depth = depth_count as f32 * WALL_SIZE.x;
 
-    // Cneter of the building footprint (used as the anchor for the roof)
+    // Center of the building footprint (used as the anchor for the roof)
     let center_x = origin.x + total_width / 2.0;
     let center_z = origin.z - total_depth / 2.0;
 
@@ -304,8 +304,8 @@ fn spawn_building(
         Transform::from_xyz(center_x, roof_y, center_z),
     ));
 
-    // Single building-level collider conversing the whole footprint.
-    // Walls are visual-only; this static box prevents the player form
+    // Single building-level collider covering the whole footprint.
+    // Walls are visual-only; this static box prevents the player from
     // walking through the building.
     let building_height = floor_count as f32 * WALL_SIZE.y;
     let building_center = Vec3::new(
@@ -323,9 +323,8 @@ fn spawn_building(
 }
 
 
-/// Spawn a single wall: visual mesh + static collider as a child entity.
-/// The child collider inherits parent rotation, so wall direction is
-/// handled by the caller's transform alone.
+/// Spawn a single wall (visual mesh only).
+/// Collision is handled at the building level in `spawn_building`.
 fn spawn_wall(
     commands: &mut Commands,
     asset_server: &AssetServer,
