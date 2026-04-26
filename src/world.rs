@@ -13,9 +13,13 @@ const BUILDING_WIDTH_MAX: usize = 6;
 const BUILDING_FLOORS_MIN: usize = 1;
 const BUILDING_FLOORS_MAX: usize = 5;
 
-// Wall geometry (mesured from gltf bounding box)
+// Wall geometry (measured from gltf bounding box)
 // Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
 const WALL_SIZE: Vec3 = Vec3::new(2.00, 3.12, 0.41);
+/// Offset from mesh pivot to mesh center.
+/// Y: pivot is at the bottom, so center is WALL_SIZE.y / 2.0 above
+/// Z: pivot is shifted forward (min=-0.31, max=0.09), center is at -0.11
+const WALL_COLLIDER_OFFSET: Vec3 = Vec3::new(0.0, 1.56, -0.11);
 
 #[derive(Copy, Clone)]
 enum RoofSize {
@@ -128,7 +132,7 @@ pub fn setup(
     let mut rng = rand::thread_rng();
 
     const ROAD_DEPTH: f32 = 4.0;    // width between house and house in a same column
-    const ROAD_WIDTH: f32 = 6.0;    // 列と列の隙間 (X方向、　馬車も通れる)
+    const ROAD_WIDTH: f32 = 6.0;    // Gap between columns （X direction, wide enough for a carriage)
     const COLUMN_COUNT: usize = 3; 
     const BUILDINGS_PER_COLUMN: usize = 5;
     
@@ -140,12 +144,12 @@ pub fn setup(
             .map(|_| random_building_plan(&mut rng))
             .collect();
 
-        // calculate the max width in thi column ( X direction width = footprint.0)
+        // calculate the max width in this column ( X direction width = footprint.0)
         let column_width = column.iter()
             .map(|p| p.footprint().0)
             .fold(0.0f32, f32::max);
 
-        // Aline houses in this column
+        // Align houses in this column
         let mut current_z = 0.0;
         for plan in &column {
             let ( w, d ) = plan.footprint();
@@ -204,7 +208,7 @@ pub fn asset_loaded(
 
 /// Draw debug grid and axes (dev only)
 pub fn draw_debug_gizmos(mut gizmos: Gizmos) {
-    // XZ Plane (gound) - white
+    // XZ Plane (ground) - white
     gizmos.grid(
         Isometry3d::from_rotation(Quat::from_rotation_x(std::f32::consts::FRAC_PI_2)),
         UVec2::new(20, 20),
@@ -251,40 +255,45 @@ fn spawn_building(
     let center_x = origin.x + total_width / 2.0;
     let center_z = origin.z - total_depth / 2.0;
 
-    let wall_asset = "medieval/Wall_Plaster_Straight.gltf#Scene0";
-
     for floor in 0..floor_count {
         let y = origin.y + floor as f32 * WALL_SIZE.y;
 
         for col in 0..width_count {
             let x = origin.x + (col as f32 + 0.5) * WALL_SIZE.x;
 
-            commands.spawn((
-                SceneRoot(asset_server.load(wall_asset)),
-                Transform::from_xyz( x , y, origin.z),  
-            ));
+            // Front wall (no rotation)
+            spawn_wall (
+                commands,
+                asset_server,
+                Transform::from_xyz(x, y, origin.z),
+            );
 
-            commands.spawn((
-                SceneRoot(asset_server.load(wall_asset)),
-                Transform::from_xyz( x , y, origin.z - total_depth)
+            // Back wall (rotated 180 degree)
+            spawn_wall(
+                commands,
+                asset_server,
+                Transform::from_xyz(x, y, origin.z -total_depth)
                     .with_rotation(Quat::from_rotation_y(std::f32::consts::PI)),
-            ));
+            );
         }
 
         for row in 0..depth_count {
             let z = origin.z - (row as f32 + 0.5)* WALL_SIZE.x;
-            // Left wall at origin.X
-            commands.spawn((
-                SceneRoot(asset_server.load(wall_asset)),
+            // Left wall (rotated -90 degrees)
+            spawn_wall(
+                commands,
+                asset_server,
                 Transform::from_xyz(origin.x, y, z)
                     .with_rotation(Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2)),
-            ));
-            // Right wall at origin.x + total_width
-            commands.spawn((
-                SceneRoot(asset_server.load(wall_asset)),
-                Transform::from_xyz(origin.x + total_width , y, z )
+            );
+
+            // Right wall (rotated +90 degrees)
+            spawn_wall (
+                commands,
+                asset_server,
+                Transform::from_xyz(origin.x + total_width, y, z)
                     .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
-            ));
+            );
         }
     }
 
@@ -296,6 +305,33 @@ fn spawn_building(
 //            .with_rotation(Quat::from_rotation_y(std::f32::consts::FRAC_PI_2)),
     ));    
 }
+
+
+/// Spawn a single wall: visual mesh + static collider as a child entity.
+/// The child collider inherits parent rotation, so wall direction is
+/// handled by the caller's transform alone.
+fn spawn_wall(
+    commands: &mut Commands,
+    asset_server: &AssetServer,
+    transform: Transform,
+) {
+    const WALL_ASSET: &str = "medieval/Wall_Plaster_Straight.gltf#Scene0";
+
+    commands
+        .spawn((
+            SceneRoot(asset_server.load(WALL_ASSET)),
+            transform,
+//            RigidBody::Static,
+//        ))
+//        .with_children(|parent|{
+//            parent.spawn((
+//                Collider::cuboid(WALL_SIZE.x, WALL_SIZE.y, WALL_SIZE.z),
+//                Transform::from_translation(WALL_COLLIDER_OFFSET),
+//            ));
+//        });
+        ));
+}
+
 
 fn random_building_plan(rng: &mut impl Rng) -> BuildingPlan {
     use RoofSize::*;
