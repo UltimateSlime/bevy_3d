@@ -11,8 +11,9 @@ const WORLD_HALF_EXTENT: f32 = 300.0;
 const BUILDING_FLOORS_MIN: usize = 1;
 const BUILDING_FLOORS_MAX: usize = 5;
 
-// Wall geometry (measured from gltf bounding box)
-// Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
+/// Wall geometry (measured from gltf bounding box)
+/// Pivot: X=center, Y=bottom, Z=near front face (0.31 behind, 0.09 in front)
+/// Mesh center offset from pivot: (0.0, 1.56, -0.11)
 const WALL_SIZE: Vec3 = Vec3::new(2.00, 3.12, 0.41);
 
 #[derive(Copy, Clone)]
